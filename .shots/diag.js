@@ -30,7 +30,7 @@ const URL = "http://localhost:3000";
   } catch (e) {
     console.log("celebrate text not found: " + e.message);
   }
-  await page.waitForTimeout(1400);
+  await page.waitForTimeout(750);
   await page.screenshot({ path: `${__dirname}/celebrate.jpg`, type: "jpeg", quality: 75 });
   console.log("shot celebrate");
   await browser.close();

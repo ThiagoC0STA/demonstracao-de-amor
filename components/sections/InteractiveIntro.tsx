@@ -24,6 +24,9 @@ const LINE_DUR = 2.6; // s — per build-up line (in → hold → out)
 
 const cssVars = (vars: Record<string, string | number>) => vars as CSSProperties;
 
+// A flicker of sad faces rained when she tries to dodge the "no" button.
+const SAD_EMOJIS = ["😢", "🥺", "😭", "😞", "🥲"];
+
 export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   const reduced = useReducedMotionPref();
   const lines = CONTENT.gate.buildup;
@@ -33,9 +36,15 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   const noPos = useRef({ x: 0, y: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
   const signedRef = useRef(false);
+  const sadId = useRef(0);
+  const lastSad = useRef(0);
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [signed, setSigned] = useState(false);
+  const [sadFaces, setSadFaces] = useState<
+    { id: number; x: number; y: number; r: number }[]
+  >([]);
+  const [simScale, setSimScale] = useState(1);
   const [leaving, setLeaving] = useState(false);
   const [hidden, setHidden] = useState(false);
 
@@ -49,17 +58,21 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
     }));
   }, []);
 
-  // Seeded confetti of hearts that drift up the screen behind the text.
+  // Seeded heart explosion — hearts shoot out from behind the words in every
+  // direction and fade as they fly off (matches "Meu coração é seu").
   const burst = useMemo(() => {
     const rng = mulberry32(771);
-    return Array.from({ length: 70 }, (_, i) => ({
-      id: i,
-      x: 2 + rng() * 96, // vw across the screen
-      bs: 0.45 + rng() * 1.1, // scale
-      drift: (rng() - 0.5) * 160, // horizontal sway px
-      dur: 3 + rng() * 2.4, // rise seconds
-      delay: rng() * 1.6, // stagger
-    }));
+    return Array.from({ length: 54 }, (_, i) => {
+      const a = rng() * Math.PI * 2;
+      const d = 280 + rng() * 720;
+      return {
+        id: i,
+        bx: Math.cos(a) * d,
+        by: Math.sin(a) * d,
+        bs: 0.6 + rng() * 1.4,
+        delay: rng() * 0.35,
+      };
+    });
   }, []);
 
   // intro → question: just a timer; CSS does the motion.
@@ -78,8 +91,10 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   };
 
   // "sim, pra sempre" → play the love-contract video. Reduced motion skips
-  // straight to the celebration beat (no autoplaying video).
+  // straight to the celebration beat (no autoplaying video). She said yes, so
+  // every sad face vanishes at once.
   const handleYes = () => {
+    setSadFaces([]);
     setPhase(reduced ? "celebrate" : "contract");
   };
 
@@ -88,6 +103,14 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   const sealContract = () => {
     if (signedRef.current) return;
     signedRef.current = true;
+    // Stop the full-screen video decoding — it kept running behind the
+    // celebration and was the thing making it stutter.
+    const v = videoRef.current;
+    if (v) {
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    }
     setSigned(true);
     window.setTimeout(() => setPhase("celebrate"), 2400);
   };
@@ -147,6 +170,27 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
     const ny = clamp(noPos.current.y + (dy / len) * push, limY);
     noPos.current = { x: nx, y: ny };
     el.style.transform = `translate(${nx}px, ${ny}px) rotate(${(Math.random() - 0.5) * 32}deg)`;
+
+    // Every flee drops a sad face at a random spot. They pile up and STAY
+    // (never removed), always sitting *behind* the buttons via z-index — they
+    // can never cover "sim, pra sempre". Each flee also nudges the "sim" button
+    // a little bigger, pulling her toward the obvious answer. Throttled so one
+    // tap (pointerdown + click) doesn't double-fire.
+    const now = Date.now();
+    if (now - lastSad.current > 200) {
+      lastSad.current = now;
+      const id = sadId.current++;
+      setSadFaces((prev) => [
+        ...prev,
+        {
+          id,
+          x: 4 + Math.random() * 90, // vw
+          y: 8 + Math.random() * 80, // vh
+          r: (Math.random() - 0.5) * 30, // tilt deg
+        },
+      ]);
+      setSimScale((s) => Math.min(s + 0.07, 2.4));
+    }
   };
 
   if (hidden) return null;
@@ -170,6 +214,21 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
       {/* shooting star + warm bloom */}
       <span className="shoot pointer-events-none absolute left-0 top-0 h-px w-40 -rotate-[28deg] bg-gradient-to-r from-transparent via-gold-bright to-transparent" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_55%,rgba(158,43,63,0.14),transparent_62%)]" />
+
+      {/* sad faces — one rains down each time the "no" button flees */}
+      {sadFaces.length > 0 && (
+        <div className="pointer-events-none absolute inset-0 z-10" aria-hidden>
+          {sadFaces.map((f) => (
+            <span
+              key={f.id}
+              className="sad-pop absolute select-none text-4xl sm:text-5xl"
+              style={cssVars({ left: `${f.x}vw`, top: `${f.y}vh`, "--r": `${f.r}deg` })}
+            >
+              {SAD_EMOJIS[f.id % SAD_EMOJIS.length]}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* CONTRACT — the love-contract video, mounted early to preload, revealed
           full-screen once she says "sim, pra sempre". */}
@@ -273,8 +332,8 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
               type="button"
               data-cursor
               onClick={handleYes}
-              className="fade-in rounded-md bg-gold px-8 py-3 font-sans text-base font-medium text-night transition-colors duration-200 hover:bg-gold-bright"
-              style={cssVars({ "--d": "0.15s" })}
+              className="fade-in rounded-md bg-gold px-8 py-3 font-sans text-base font-medium text-night transition-[transform,background-color] duration-300 ease-smooth hover:bg-gold-bright"
+              style={cssVars({ "--d": "0.15s", transform: `scale(${simScale})` })}
             >
               {CONTENT.gate.yes}
             </button>
@@ -304,9 +363,9 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
           {!reduced && (
             <>
               {/* light shockwaves radiating out */}
-              <span className="pulse-flash absolute left-1/2 top-1/2 -ml-[40vmax] -mt-[40vmax] h-[80vmax] w-[80vmax] rounded-full bg-[radial-gradient(circle,rgba(255,226,170,0.4),transparent_60%)]" />
+              <span className="pulse-flash absolute left-1/2 top-1/2 -ml-[30vmax] -mt-[30vmax] h-[60vmax] w-[60vmax] rounded-full bg-[radial-gradient(circle,rgba(255,226,170,0.4),transparent_60%)]" />
               <span
-                className="pulse-flash absolute left-1/2 top-1/2 -ml-[40vmax] -mt-[40vmax] h-[80vmax] w-[80vmax] rounded-full bg-[radial-gradient(circle,rgba(158,43,63,0.32),transparent_60%)]"
+                className="pulse-flash absolute left-1/2 top-1/2 -ml-[30vmax] -mt-[30vmax] h-[60vmax] w-[60vmax] rounded-full bg-[radial-gradient(circle,rgba(158,43,63,0.32),transparent_60%)]"
                 style={cssVars({ "--d": "0.55s" })}
               />
               {/* hearts drifting up like confetti, behind the text */}
@@ -314,12 +373,13 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                 {burst.map((h) => (
                   <span
                     key={h.id}
-                    className="heart-rise absolute bottom-0 text-gold-bright"
+                    className="gate-burst absolute left-1/2 top-1/2 text-gold-bright"
                     style={cssVars({
-                      left: `${h.x}vw`,
+                      marginLeft: -12,
+                      marginTop: -12,
+                      "--bx": `${h.bx}px`,
+                      "--by": `${h.by}px`,
                       "--bs": `${h.bs}`,
-                      "--drift": `${h.drift}px`,
-                      "--dur": `${h.dur}s`,
                       "--d": `${h.delay}s`,
                     })}
                   >
