@@ -1,36 +1,196 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Para Lilian — uma carta para você
 
-## Getting Started
+A cinematic, single-page love letter. Eight scenes paced like a film: a typed
+preloader, a 3D hero, a typewriter opening, a pinned horizontal timeline, a
+"what I love about you" grid, a rotating 3D photo dodecahedron, the letter
+itself on paper, and a glowing 3D heart finale — with smooth scroll, ambient
+audio, a custom cursor, and two easter eggs.
 
-First, run the development server:
+Everything you'd want to personalize lives in **one file**:
+[`lib/constants.ts`](lib/constants.ts).
+
+---
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build
+npm run start    # serve the production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Lint (use the project-local ESLint — a globally-installed ESLint may shadow it):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+node ./node_modules/eslint/bin/eslint.js .
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Customizing the content
 
-To learn more about Next.js, take a look at the following resources:
+Open [`lib/constants.ts`](lib/constants.ts) and edit the `CONTENT` object. No
+component code needs to change.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Field | What it controls |
+|---|---|
+| `name` | The name typed in the preloader and rendered in 3D in the hero. |
+| `hero.subtitle` | The italic line under the 3D name. |
+| `opening[]` | The two (or more) typewriter lines in Section 2. Keep them short. |
+| `timeline[]` | The 5 timeline cards. Each: `{ date, title, description }`. The `date` is just a label ("O começo", "2021"…), not a real date — write anything. |
+| `qualities[]` | The 6 cards in "o que eu amo em você". Each: `{ title, description }`. |
+| `memoryPhrases[]` | Phrases that cross-fade over the rotating 3D photo scene. |
+| `letter.paragraphs[]` | The body of the letter, revealed one paragraph at a time. Add or remove freely. |
+| `letter.signature` | The sign-off, shown in the handwriting font. |
+| `ending.title` | The big italic line in the finale. |
+| `ending.backToTop` | Label of the button that appears after 3s. |
+| `konamiMessage` | Hidden message revealed by the Konami code (see Easter eggs). |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> The default copy is in Portuguese. Replace it with your own — the layout
+> adapts to longer or shorter text.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Replacing the audio track
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The site ships with **Erik Satie — _Gymnopédie No.1_** (public domain
+recording, sourced from the [Internet Archive](https://archive.org/details/GymnopedieNo.1)).
+To use your own track, just replace the file:
+
+```
+public/audio/ambient.mp3
+```
+
+The path is set in `ASSETS.audio` in `lib/constants.ts` if you want a different
+filename. The player starts paused; the toggle (bottom-right) fades the volume
+in over 2s and out over 1s via Howler.
+
+---
+
+## Adding your own photos (3D memory scene)
+
+By default the dodecahedron uses **generated gold gradient placeholders** so the
+scene always renders. To use real photos:
+
+1. Drop 6 images in `public/images/` named `memory-1.jpg` … `memory-6.jpg`
+   (square images look best — they're shown on flat faces). Paths are listed in
+   `ASSETS.memoryPhotos`.
+2. In [`components/three/MemoryPolyhedron.tsx`](components/three/MemoryPolyhedron.tsx),
+   replace the generated textures with a loader. Swap the `textures` memo for:
+
+   ```tsx
+   import { useTexture } from "@react-three/drei";
+   // inside the component, instead of the makeGradientTexture memo:
+   const textures = useTexture([...ASSETS.memoryPhotos]);
+   ```
+
+   (Keep `<MemoryPolyhedron />` inside a `<Suspense>` — it already is, in
+   `MemoryScene.tsx`.)
+
+---
+
+## The 3D display typeface
+
+The extruded hero name needs a Three.js typeface JSON at
+`public/fonts/display.typeface.json` (currently **Gentilis**, an elegant serif
+from the Three.js examples). To change it, convert any font with
+[facetype.js](https://gero3.github.io/facetype.js/) and replace that file. The
+path is set in `components/three/Hero3DText.tsx` (`FONT_PATH`).
+
+UI fonts (Playfair Display, Inter, Caveat) are loaded and self-hosted by
+`next/font` in [`app/layout.tsx`](app/layout.tsx).
+
+---
+
+## Design tokens
+
+Palette, easings, durations and stagger timing live in `lib/constants.ts`
+(`PALETTE`, `EASING`, `DURATION`, `STAGGER`) and are mirrored as CSS
+variables / Tailwind v4 theme tokens in [`app/globals.css`](app/globals.css).
+Utilities generated from the theme: `bg-night`, `bg-night-soft`, `text-gold`,
+`text-gold-bright`, `text-cream`, `text-muted`, `text-paper`, `font-display`,
+`font-sans`, `font-signature`, `ease-smooth`, `ease-dramatic`.
+
+---
+
+## Easter eggs
+
+- **Click the 3D name "Lilian" 5 times** in the hero → a gold confetti burst.
+- **Konami code** (`↑ ↑ ↓ ↓ ← → ← → b a`) anywhere → reveals `konamiMessage`.
+
+---
+
+## Accessibility / reduced motion
+
+Everything respects `prefers-reduced-motion`. With it on: Lenis smooth-scroll is
+disabled (native scroll), the preloader/typewriters show full text immediately,
+the timeline becomes a vertical stack instead of a pinned horizontal scroll, and
+CSS animations are neutralized.
+
+---
+
+## Deploy
+
+```bash
+# Set your real domain so the OG image resolves to an absolute URL
+# (or change the fallback in app/layout.tsx -> metadata.metadataBase):
+NEXT_PUBLIC_SITE_URL=https://your-domain.com npm run build
+```
+
+Metadata: title **Para Lilian**, description **Uma carta para você.**, a gold
+heart favicon (`app/icon.svg`), and a generated OG image
+(`app/opengraph-image.tsx`).
+
+---
+
+## File structure
+
+```
+app/
+  layout.tsx            fonts, metadata, providers
+  page.tsx              composes all sections; dynamic-imports the 3D scenes
+  globals.css           design system (Tailwind v4 @theme)
+  icon.svg              gold-heart favicon
+  opengraph-image.tsx   generated OG image
+components/
+  sections/             Preloader, Hero, Opening, Timeline, WhatILove,
+                        MemoryScene, Letter, Ending
+  three/                ParticleField, Hero3DText, MemoryPolyhedron, HeartGeometry
+  ui/                   CustomCursor, AudioToggle, ScrollIndicator, KonamiEasterEgg
+  providers/            LenisProvider, ReducedMotionProvider
+hooks/
+  useLenis.ts           shared Lenis instance + scrollTo helper
+  useGsap.ts            registers GSAP plugins; re-exports gsap/ScrollTrigger/useGSAP
+lib/
+  constants.ts          <- all editable content + design tokens
+  animations.ts         reusable Motion variants
+  seededRandom.ts       pure PRNG for particle layouts
+public/
+  audio/ambient.mp3            ambient track (swap freely)
+  fonts/display.typeface.json  3D hero typeface
+  images/                      your photos (memory-1..6.jpg) — optional
+```
+
+---
+
+## Notes on the stack (vs. the original brief)
+
+Built on the toolchain that was actually installed, which is newer than the
+brief assumed. Adjustments made for compatibility:
+
+- **Next.js 16 + React 19 + Tailwind v4** (brief assumed Next 14 / React 18 /
+  Tailwind v3). Tailwind v4 is configured CSS-first via `@theme` in
+  `globals.css` — there is no `tailwind.config.js`.
+- **`motion`** (current package, imported from `motion/react`) instead of
+  `framer-motion` — same API, React 19 compatible.
+- **`lenis`** (the maintained rename) instead of `@studio-freight/lenis`.
+- Added **`@react-three/postprocessing` + `postprocessing`** for the bloom /
+  chromatic-aberration effects (the brief listed the effects but not the deps).
+- **`tailwindcss-animate` skipped** — it targets Tailwind v3; GSAP, Motion and a
+  few CSS keyframes cover the animation needs.
+- **shadcn/ui skipped** — the UI is fully bespoke; nothing shadcn would improve.
+- The 3D hero name uses the bundled Gentilis serif typeface (no Playfair
+  typeface JSON exists out of the box); see "The 3D display typeface" above.
+- Hook file named `hooks/useGsap.ts` (the brief wrote `useGSAP.ts`) to avoid a
+  name clash with the imported `useGSAP` identifier on case-insensitive systems.

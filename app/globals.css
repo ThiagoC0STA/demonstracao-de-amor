@@ -1,26 +1,241 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ===========================================================================
+   Design system — Tailwind v4 is configured CSS-first via @theme.
+   Tokens here generate utilities: bg-night, text-gold, font-display, etc.
+   Font vars (--font-playfair…) are injected at runtime by next/font in
+   app/layout.tsx; `@theme inline` makes the utilities resolve them per-element.
+   =========================================================================== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-night: #0c0b0d; /* bg-primary — warm near-black, never pure */
+  --color-night-soft: #141019; /* bg-secondary — lifted surface */
+  --color-gold: #d4af7a; /* the single accent */
+  --color-gold-bright: #e8c896; /* highlight */
+  --color-cream: #f5f1ea; /* text-primary */
+  --color-muted: #a8a29e; /* text-secondary */
+  --color-rose: #c0455c; /* atmosphere only */
+  --color-wine: #9e2b3f; /* atmosphere only */
+  --color-paper: #f2ebe0; /* letter bg */
+  --color-gold-ink: #9c7a45; /* gold legible on the light paper */
+
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-signature: var(--font-caveat), cursive;
+
+  /* Fluid type scale — generates text-display / text-h2 / text-lead /
+     text-meta / text-signature utilities. */
+  --text-display: clamp(2.75rem, 6vw + 1rem, 6.5rem);
+  --text-h2: clamp(2rem, 4vw + 0.5rem, 4rem);
+  --text-lead: clamp(1.5rem, 2.2vw + 0.75rem, 2.5rem);
+  --text-meta: clamp(0.7rem, 0.4vw + 0.6rem, 0.8rem);
+  --text-signature: clamp(2.5rem, 5vw, 4.5rem);
+
+  /* Easing tokens, mirrored from lib/constants.ts */
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1); /* signature spring-out */
+  --ease-dramatic: cubic-bezier(0.22, 1, 0.36, 1); /* expressive curtain */
+  --ease-micro: cubic-bezier(0.33, 1, 0.68, 1); /* crisp hover/focus */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --bg-primary: #0c0b0d;
+  --gold: #d4af7a;
+  /* Re-declared here (not only in @theme inline) so var() references in
+     keyframes and arbitrary utilities resolve at runtime. */
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-dramatic: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-micro: cubic-bezier(0.33, 1, 0.68, 1);
+  color-scheme: dark;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Layered radial so the whole page reads as one dimly-lit room rather than a
+     flat black fill (depth without a "gradient" look). Fixed so it doesn't
+     scroll. */
+  background: radial-gradient(
+      120% 80% at 50% 0%,
+      #161219 0%,
+      #0c0b0d 55%,
+      #08070a 100%
+    )
+    fixed;
+  color: #f5f1ea;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  /* `clip` (not `hidden`) prevents horizontal scroll WITHOUT forcing
+     overflow-y to `auto`. `hidden` would turn <body> into its own scroll
+     container, which breaks Lenis smooth scrolling. */
+  overflow-x: clip;
+}
+
+/* Display-type discipline + readable measures. */
+.font-display {
+  letter-spacing: -0.02em;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+.measure {
+  max-width: 60ch;
+}
+
+/* One consistent eyebrow / meta label across sections. */
+.meta-label {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: var(--text-meta);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+}
+
+/* Uniform vertical rhythm for content sections. */
+.section-pad {
+  padding-top: 7rem;
+  padding-bottom: 7rem;
+}
+@media (min-width: 640px) {
+  .section-pad {
+    padding-top: 11rem;
+    padding-bottom: 11rem;
+  }
+}
+
+::selection {
+  background: rgba(212, 175, 122, 0.3);
+  color: #f5f1ea;
+}
+
+/* ---------------------------------------------------------------------------
+   Custom cursor: hide the native cursor only on devices with a fine pointer
+   (mouse), and only once <CustomCursor> has mounted and added `.custom-cursor`
+   to <body>. Touch devices keep their default behavior.
+   --------------------------------------------------------------------------- */
+@media (hover: hover) and (pointer: fine) {
+  body.custom-cursor,
+  body.custom-cursor * {
+    cursor: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Lenis smooth-scroll recommended styles.
+   --------------------------------------------------------------------------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+   Paper texture for the Letter section — a subtle SVG fractal-noise overlay
+   blended onto the warm paper color. No external image needed.
+   --------------------------------------------------------------------------- */
+.paper-texture {
+  background-color: var(--color-paper, #f2ebe0);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* Thin downward-drawing scroll indicator line (Section 1). */
+@keyframes draw-down {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  50.01% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+.animate-draw-down {
+  animation: draw-down 2.4s var(--ease-smooth) infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Cinematic film grain — one static, very subtle monochrome noise layer over
+   everything. Static (no loop): it's texture, not decoration. Sits below the
+   custom cursor (z 9998/9999) and never intercepts input.
+   --------------------------------------------------------------------------- */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* Vignette: darkened edges for cinematic depth. Add to a `relative` section. */
+.vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 120% at center,
+    transparent 52%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+/* Soft edge fades to blend adjacent dark sections (no hard color seams). */
+.fade-top::before,
+.fade-bottom::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18vh;
+  z-index: 2;
+  pointer-events: none;
+}
+.fade-top::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg-primary), transparent);
+}
+.fade-bottom::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg-primary), transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced-motion fallback. JS also reads the preference (ReducedMotionProvider)
+   to swap variants, but this is the CSS safety net for everything else.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

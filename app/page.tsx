@@ -1,65 +1,65 @@
-import Image from "next/image";
+"use client";
+
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+import { InteractiveIntro } from "@/components/sections/InteractiveIntro";
+import { Opening } from "@/components/sections/Opening";
+import { Timeline } from "@/components/sections/Timeline";
+import { WhatILove } from "@/components/sections/WhatILove";
+import { Letter } from "@/components/sections/Letter";
+import { CustomCursor } from "@/components/ui/CustomCursor";
+import { AudioToggle } from "@/components/ui/AudioToggle";
+import { KonamiEasterEgg } from "@/components/ui/KonamiEasterEgg";
+import { useLenis } from "@/hooks/useLenis";
+
+// Black placeholder that reserves the section's full height while the 3D
+// canvas chunk loads — prevents layout shift and keeps the dark mood.
+const SceneFallback = () => <div className="h-svh w-full bg-night" />;
+
+// 3D scenes are client-only and heavy, so they are code-split and never SSR'd.
+const Hero = dynamic(
+  () => import("@/components/sections/Hero").then((m) => m.Hero),
+  { ssr: false, loading: SceneFallback },
+);
+const MemoryScene = dynamic(
+  () => import("@/components/sections/MemoryScene").then((m) => m.MemoryScene),
+  { ssr: false, loading: SceneFallback },
+);
+const Ending = dynamic(
+  () => import("@/components/sections/Ending").then((m) => m.Ending),
+  { ssr: false, loading: SceneFallback },
+);
 
 export default function Home() {
+  const [ready, setReady] = useState(false);
+  const lenis = useLenis();
+
+  // No scroll lock. Locking via body overflow / lenis.stop() is exactly what
+  // trapped users on the hero, and the preloader is a full-screen overlay so
+  // nothing shows behind it anyway. We just snap back to the top once the
+  // preloader finishes, in case the page drifted while it played.
+  useEffect(() => {
+    if (!ready) return;
+    if (lenis) lenis.scrollTo(0, { immediate: true });
+    else window.scrollTo(0, 0);
+  }, [ready, lenis]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <InteractiveIntro onComplete={() => setReady(true)} />
+      <CustomCursor />
+      <AudioToggle />
+      <KonamiEasterEgg />
+
+      <main>
+        <Hero />
+        <Opening />
+        <Timeline />
+        <WhatILove />
+        <MemoryScene />
+        <Letter />
+        <Ending />
       </main>
-    </div>
+    </>
   );
 }
