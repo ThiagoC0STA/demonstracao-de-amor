@@ -1,23 +1,25 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { ASSETS } from "@/lib/constants";
 
 /**
- * A dodecahedron of photos whose camera is *driven by scroll*: as you roll
- * through the (tall, sticky) Memory section the camera orbits the solid and
- * pushes in, revealing the faces in sequence. On a mouse, the pointer adds a
- * gentle parallax on top. It also keeps a slow idle spin so it never feels dead.
+ * A sphere of photos whose camera is *driven by scroll*: as you roll through the
+ * (tall, sticky) Memory section the camera orbits the solid and pushes in,
+ * revealing the faces in sequence. On a mouse, the pointer adds a gentle
+ * parallax. It also keeps a slow idle spin so it never feels dead.
  *
  * Texturing real pentagonal faces needs painful UV work, so instead we place 12
  * flat planes on the 12 face-normals of a dodecahedron. Those normals are the
- * vertices of an icosahedron (golden-ratio coords), hardcoded and normalized;
- * each plane is oriented outward via a quaternion rotating +Z onto its normal.
+ * vertices of an icosahedron (golden-ratio coords), normalized; each plane is
+ * oriented outward via a quaternion rotating +Z onto its normal.
  *
- * Textures default to generated gold gradients so the scene always renders. To
- * use real photos, swap `makeGradientTexture` for a TextureLoader on
- * ASSETS.memoryPhotos (see README).
+ * The 6 photos in `ASSETS.memoryPhotos` are loaded and centre-cropped to square,
+ * then shown unlit (meshBasicMaterial) so they read clearly regardless of which
+ * way the face is turned. A soft gold gradient is the fallback while they load
+ * or if one 404s, so the scene always renders.
  */
 
 const PHI = (1 + Math.sqrt(5)) / 2;
@@ -40,7 +42,7 @@ const FACE_DIRS: THREE.Vector3[] = [
   [-PHI, 0, -1],
 ].map(([x, y, z]) => new THREE.Vector3(x, y, z).normalize());
 
-/** Build a soft gold→charcoal gradient texture, varied by index. */
+/** Build a soft gold→charcoal gradient texture, varied by index (fallback). */
 function makeGradientTexture(index: number): THREE.Texture {
   const s = 512;
   const canvas = document.createElement("canvas");
@@ -57,30 +59,20 @@ function makeGradientTexture(index: number): THREE.Texture {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, s, s);
 
-  // Vignette for depth.
-  const vg = ctx.createRadialGradient(
-    s / 2,
-    s / 2,
-    s * 0.1,
-    s / 2,
-    s / 2,
-    s * 0.7,
-  );
-  vg.addColorStop(0, "rgba(0,0,0,0)");
-  vg.addColorStop(1, "rgba(0,0,0,0.45)");
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, s, s);
-
-  // A faint heart mark so placeholders read as "photo slots".
-  ctx.fillStyle = "rgba(251,248,241,0.10)";
-  ctx.font = `${s * 0.3}px serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("♥", s / 2, s / 2 + s * 0.04);
-
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+/** Centre-crop a loaded texture to a square so portrait photos don't squish. */
+function coverSquare(tex: THREE.Texture) {
+  const img = tex.image as { width: number; height: number } | undefined;
+  if (!img?.width || !img?.height) return;
+  const aspect = img.width / img.height;
+  tex.center.set(0.5, 0.5);
+  if (aspect < 1) tex.repeat.set(1, aspect); // portrait: crop top/bottom
+  else tex.repeat.set(1 / aspect, 1); // landscape: crop sides
+  tex.offset.set((1 - tex.repeat.x) / 2, (1 - tex.repeat.y) / 2);
 }
 
 export function MemoryPolyhedron({
@@ -94,28 +86,60 @@ export function MemoryPolyhedron({
   const groupRef = useRef<THREE.Group>(null);
   const idle = useRef(0);
 
-  // 6 unique textures, reused on the 12 faces (i % 6).
-  const textures = useMemo(
+  // 6 fallback gradients, replaced by the real photos as they load.
+  const gradients = useMemo(
     () => Array.from({ length: 6 }, (_, i) => makeGradientTexture(i)),
     [],
   );
-  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures]);
+  const [maps, setMaps] = useState<THREE.Texture[]>(gradients);
+
+  useEffect(() => () => gradients.forEach((t) => t.dispose()), [gradients]);
+
+  // Load the real photos onto the faces; keep the gradient on any that fail.
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    const loaded: THREE.Texture[] = [];
+    let cancelled = false;
+    ASSETS.memoryPhotos.slice(0, 6).forEach((url, i) => {
+      loader.load(
+        url,
+        (tex) => {
+          if (cancelled) {
+            tex.dispose();
+            return;
+          }
+          tex.colorSpace = THREE.SRGBColorSpace;
+          coverSquare(tex);
+          loaded[i] = tex;
+          setMaps((prev) => {
+            const next = [...prev];
+            next[i] = tex;
+            return next;
+          });
+        },
+        undefined,
+        () => {
+          /* keep the gradient fallback on error */
+        },
+      );
+    });
+    return () => {
+      cancelled = true;
+      loaded.forEach((t) => t?.dispose());
+    };
+  }, []);
 
   // Per-plane outward orientation (quaternion rotating +Z onto the face normal).
   const faces = useMemo(
     () =>
-      FACE_DIRS.map((dir, i) => {
+      FACE_DIRS.map((dir) => {
         const q = new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 0, 1),
           dir,
         );
-        return {
-          position: dir.clone().multiplyScalar(RADIUS),
-          quaternion: q,
-          texture: textures[i % textures.length],
-        };
+        return { position: dir.clone().multiplyScalar(RADIUS), quaternion: q };
       }),
-    [textures],
+    [],
   );
 
   useFrame((state, delta) => {
@@ -125,17 +149,14 @@ export function MemoryPolyhedron({
     const p = progress?.current ?? 0;
     idle.current += delta * 0.12;
 
-    // Pointer parallax (normalized -1..1), zero on touch where pointer stays 0.
     const px = state.pointer.x;
     const py = state.pointer.y;
 
-    // Scroll scrubs ~1.5 turns; idle keeps it alive; pointer nudges on top.
     const targetY = idle.current + p * Math.PI * 1.5 + px * 0.35;
     const targetX = 0.12 + p * 0.5 - py * 0.25;
     g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, targetY, 0.12);
     g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, targetX, 0.1);
 
-    // Camera orbits in and parallaxes with the pointer; always looks at center.
     const cam = state.camera;
     cam.position.z = THREE.MathUtils.lerp(cam.position.z, 6.2 - p * 1.8, 0.06);
     cam.position.x = THREE.MathUtils.lerp(cam.position.x, px * 0.6, 0.05);
@@ -144,17 +165,13 @@ export function MemoryPolyhedron({
   });
 
   return (
-    // A gentle resting tilt so the reduced-motion / first frame already looks
-    // composed rather than face-on.
     <group ref={groupRef} rotation={[0.3, 0.5, 0]}>
       {faces.map((face, i) => (
         <mesh key={i} position={face.position} quaternion={face.quaternion}>
           <planeGeometry args={[PLANE, PLANE]} />
-          <meshStandardMaterial
-            map={face.texture}
+          <meshBasicMaterial
+            map={maps[i % maps.length]}
             side={THREE.DoubleSide}
-            roughness={0.6}
-            metalness={0.1}
             toneMapped={false}
           />
         </mesh>

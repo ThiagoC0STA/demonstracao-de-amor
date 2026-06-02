@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { InteractiveIntro } from "@/components/sections/InteractiveIntro";
 import { Opening } from "@/components/sections/Opening";
 import { Timeline } from "@/components/sections/Timeline";
+import { CosmicInterlude } from "@/components/sections/CosmicInterlude";
 import { WhatILove } from "@/components/sections/WhatILove";
 import { Letter } from "@/components/sections/Letter";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { AudioToggle } from "@/components/ui/AudioToggle";
 import { KonamiEasterEgg } from "@/components/ui/KonamiEasterEgg";
+import { Starfield } from "@/components/ui/Starfield";
 import { useLenis } from "@/hooks/useLenis";
 
 // Black placeholder that reserves the section's full height while the 3D
@@ -42,14 +44,16 @@ export default function Home() {
 
   return (
     <>
+      <Starfield />
       <InteractiveIntro onComplete={() => setReady(true)} />
       <CustomCursor />
       <AudioToggle />
       <KonamiEasterEgg />
 
-      <main>
+      <main className="relative z-10">
         <Opening />
         <Timeline />
+        <CosmicInterlude />
         <WhatILove />
         <MemoryScene />
         <Letter />

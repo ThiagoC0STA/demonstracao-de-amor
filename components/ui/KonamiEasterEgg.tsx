@@ -1,13 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { CONTENT } from "@/lib/constants";
 
 /**
- * Listens for the Konami code anywhere on the page and reveals a hidden
- * message. The sequence resets on any wrong key, and the message auto-dismisses
- * after a few seconds.
+ * Listens for the Konami code anywhere on the page and reveals a hidden message
+ * (auto-dismisses after a few seconds). The message rises in via a CSS class —
+ * no animation library.
  */
 const SEQUENCE = [
   "ArrowUp",
@@ -36,7 +35,6 @@ export function KonamiEasterEgg() {
           progress = 0;
         }
       } else {
-        // Allow a wrong key to still be the start of a new attempt.
         progress = e.key === SEQUENCE[0] ? 1 : 0;
       }
     };
@@ -50,27 +48,16 @@ export function KonamiEasterEgg() {
     return () => clearTimeout(t);
   }, [revealed]);
 
+  if (!revealed) return null;
+
   return (
-    <AnimatePresence>
-      {revealed && (
-        <motion.div
-          className="fixed inset-0 z-[500] flex items-center justify-center bg-night/80 px-6 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setRevealed(false)}
-        >
-          <motion.p
-            className="max-w-[40ch] text-center font-display text-2xl italic text-gold sm:text-4xl"
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            {CONTENT.konamiMessage}
-          </motion.p>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div
+      onClick={() => setRevealed(false)}
+      className="fixed inset-0 z-[500] flex items-center justify-center bg-night/80 px-6 backdrop-blur-sm"
+    >
+      <p className="rise-in max-w-[40ch] text-center font-display text-2xl italic text-gold sm:text-4xl">
+        {CONTENT.konamiMessage}
+      </p>
+    </div>
   );
 }

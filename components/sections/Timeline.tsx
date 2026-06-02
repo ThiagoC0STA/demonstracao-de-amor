@@ -1,49 +1,71 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "motion/react";
-import { useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import { CONTENT, type TimelineCard } from "@/lib/constants";
-import { EASE_SMOOTH } from "@/lib/animations";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import { useTilt } from "@/hooks/useTilt";
-import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
+import { useReveal } from "@/hooks/useReveal";
 
 /**
- * Section 3 — Nossa história (vertical timeline).
- *
- * The glass, the text-glow and the decorative gold gradients are gone — the
- * photo now carries the weight and the type floats on the dark. Each chapter's
- * image is revealed by a clip-path wipe and parallaxes *inside* its frame as you
- * scroll; on a mouse it tilts toward the pointer. The center rail fills with
- * gold (no glow), and each node lights as its chapter reaches the middle.
+ * Section 2 — Nossa história, a star trail through the sky. Chapters reveal as
+ * they enter (CSS), each photo tilts toward the pointer, and the center trail
+ * fills with gold as you descend — that fill is driven by a tiny vanilla scroll
+ * handler (no animation library).
  */
 export function Timeline() {
+  const revealRef = useReveal<HTMLElement>();
   const railRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: railRef,
-    offset: ["start center", "end center"],
-  });
+  const fillRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    const fill = fillRef.current;
+    if (!rail || !fill) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const r = rail.getBoundingClientRect();
+      // 0 when the rail top reaches viewport center, 1 when its bottom does.
+      const p = (window.innerHeight / 2 - r.top) / r.height;
+      fill.style.transform = `scaleY(${Math.max(0, Math.min(1, p))})`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
   return (
-    <section className="section-pad relative bg-night px-6">
+    <section ref={revealRef} className="section-pad relative px-6">
       <div className="mx-auto max-w-5xl">
-        <span className="meta-label flex items-center gap-3">
+        <span data-reveal className="meta-label flex items-center gap-3">
           <span className="h-px w-12 bg-gold/40" />
           nossa história
         </span>
-        <h2 className="mt-6 max-w-[14ch] font-display text-[length:var(--text-h2)] font-medium leading-[1.02] tracking-display text-cream">
-          como a gente <span className="font-normal italic text-gold-bright">chegou</span> aqui
+        <h2
+          data-reveal
+          style={{ "--reveal-delay": "0.08s" } as CSSProperties}
+          className="mt-6 max-w-[14ch] font-display text-[length:var(--text-h2)] font-medium leading-[1.02] tracking-display text-cream"
+        >
+          como a gente{" "}
+          <span className="font-normal italic text-gold-bright">chegou</span> aqui
         </h2>
 
         <div ref={railRef} className="relative mt-20 sm:mt-28">
-          {/* rail: static track + gold fill that follows scroll (no glow) */}
-          <span className="absolute left-3 top-0 h-full w-px bg-cream/10 md:left-1/2 md:-translate-x-1/2" />
-          <motion.span
-            style={{ scaleY: scrollYProgress }}
-            className="absolute left-3 top-0 h-full w-px origin-top bg-gradient-to-b from-gold to-gold-bright md:left-1/2 md:-translate-x-1/2"
+          <span className="absolute left-3 top-0 h-full w-px bg-cream/10 md:left-1/2" />
+          <span
+            ref={fillRef}
+            className="absolute left-3 top-0 h-full w-px origin-top scale-y-0 bg-gradient-to-b from-gold to-gold-bright md:left-1/2"
           />
 
-          <div className="flex flex-col gap-28 md:gap-44">
+          <div className="flex flex-col gap-28 md:gap-40">
             {CONTENT.timeline.map((card, i) => (
               <Chapter key={i} card={card} index={i} />
             ))}
@@ -55,52 +77,23 @@ export function Timeline() {
 }
 
 function Chapter({ card, index }: { card: TimelineCard; index: number }) {
-  const reduced = useReducedMotionPref();
-  const ref = useRef<HTMLDivElement>(null);
   const tiltRef = useTilt<HTMLDivElement>(6);
-  const left = index % 2 === 0; // text on the left column on desktop
+  const left = index % 2 === 0;
   const n = (index + 1).toString().padStart(2, "0");
 
-  // Internal photo parallax: the image is a touch taller than its frame and
-  // slides within it as the chapter passes through the viewport.
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  const imgY = useTransform(
-    scrollYProgress,
-    [0, 1],
-    reduced ? ["0%", "0%"] : ["-7%", "7%"],
-  );
-
-  const textReveal = {
-    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 28 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, amount: 0.4 },
-    transition: { duration: 0.9, ease: EASE_SMOOTH },
-  };
-
   return (
-    <div
-      ref={ref}
-      className="relative md:grid md:grid-cols-2 md:items-center md:gap-16"
-    >
-      {/* node dot on the rail — lights up when the chapter reaches the middle */}
-      <span className="absolute left-3 top-1 z-10 -translate-x-1/2 md:left-1/2">
-        <motion.span
-          initial={{ scale: 0.4, opacity: 0.3 }}
-          whileInView={{ scale: 1, opacity: 1 }}
-          viewport={{ once: false, amount: 0.8 }}
-          transition={{ duration: 0.5, ease: EASE_SMOOTH }}
-          className="block h-3 w-3 rounded-full border border-gold bg-night"
-        >
-          <span className="absolute inset-[3px] rounded-full bg-gold" />
-        </motion.span>
+    <div className="relative md:grid md:grid-cols-2 md:items-center md:gap-16">
+      {/* node star on the rail (centred with margin, so its transform stays free
+          for the reveal) */}
+      <span
+        data-reveal
+        className="absolute left-3 top-1 z-10 -ml-1.5 block h-3 w-3 rounded-full border border-gold bg-night shadow-[0_0_12px_2px_rgba(229,184,116,0.5)] md:left-1/2"
+      >
+        <span className="absolute inset-[3px] rounded-full bg-gold" />
       </span>
 
-      {/* text */}
-      <motion.div
-        {...textReveal}
+      <div
+        data-reveal
         className={`pl-10 md:pl-0 ${
           left ? "md:pr-16 md:text-right" : "md:order-2 md:pl-16"
         }`}
@@ -119,39 +112,26 @@ function Chapter({ card, index }: { card: TimelineCard; index: number }) {
         <span className="nums-lining mt-6 block font-display text-6xl leading-none text-gold/12">
           {n}
         </span>
-      </motion.div>
+      </div>
 
-      {/* photo / video — the reveal (opacity + rise) lives on the OUTER grid
-          child, the same proven pattern as the text. The previous clip-path
-          whileInView never fired (it sat on an element nested inside the
-          tilt-transformed wrapper), leaving every frame clipped to nothing and
-          the photo column black. The pointer tilt (gsap) keeps its own element
-          and the internal scroll parallax stays. */}
-      <motion.div
-        initial={reduced ? { opacity: 0 } : { opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.25 }}
-        transition={{ duration: 1, ease: EASE_SMOOTH }}
+      <div
+        data-reveal
+        style={{ "--reveal-delay": "0.12s" } as CSSProperties}
         className={`mt-10 pl-10 md:mt-0 md:pl-0 ${left ? "" : "md:order-1"}`}
       >
         <div
           ref={tiltRef}
-          className="card-surface relative aspect-[4/5] w-full overflow-hidden rounded-md [transform-style:preserve-3d]"
+          className="tilt card-surface relative aspect-[4/5] w-full overflow-hidden rounded-md"
         >
-          <motion.div
-            style={{ y: imgY }}
-            className="absolute inset-x-0 -top-[15%] h-[130%]"
-          >
-            <MediaFrame
-              media={card.media}
-              seed={index + 1}
-              alt={card.title}
-              hint="foto desse momento"
-              className="h-full w-full"
-            />
-          </motion.div>
+          <MediaFrame
+            media={card.media}
+            seed={index + 1}
+            alt={card.title}
+            hint="foto desse momento"
+            className="h-full w-full"
+          />
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

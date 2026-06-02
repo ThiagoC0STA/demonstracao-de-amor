@@ -21,12 +21,15 @@ export function MediaFrame({
   seed = 0,
   className = "",
   hint = "sua foto aqui",
+  objectPosition,
 }: {
   media: MediaRef;
   alt: string;
   seed?: number;
   className?: string;
   hint?: string;
+  /** CSS object-position for the cover crop (e.g. "center 22%"). */
+  objectPosition?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -76,6 +79,7 @@ export function MediaFrame({
           loading="lazy"
           onLoad={() => setLoaded(true)}
           onError={() => setLoaded(false)}
+          style={{ objectPosition }}
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-[var(--ease-smooth)] ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
@@ -92,6 +96,7 @@ export function MediaFrame({
           aria-label={alt}
           onLoadedData={() => setLoaded(true)}
           onError={() => setLoaded(false)}
+          style={{ objectPosition }}
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
             loaded ? "opacity-100" : "opacity-0"
           }`}

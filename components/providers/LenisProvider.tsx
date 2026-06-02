@@ -1,19 +1,15 @@
 "use client";
 
 import Lenis from "lenis";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
 
 /**
- * Owns the single Lenis smooth-scroll instance and wires it into GSAP so that
- * ScrollTrigger and Lenis share one clock. This is the canonical integration:
- *
- *   1. Lenis emits `scroll`  -> ScrollTrigger.update() keeps pins in sync.
- *   2. gsap.ticker drives lenis.raf() so there is a single rAF loop.
- *   3. lagSmoothing(0) stops GSAP from "catching up" after a stutter, which
- *      would otherwise desync the pinned timeline.
+ * Owns the single Lenis smooth-scroll instance, driven by its own
+ * requestAnimationFrame loop (no GSAP ticker / ScrollTrigger — the site has no
+ * animation library). Lenis is smooth-scroll plumbing, not animation; the
+ * hand-made reveals (IntersectionObserver + CSS) read the resulting native
+ * scroll position directly.
  *
  * When the user prefers reduced motion we skip Lenis entirely and let the
  * browser scroll natively (no inertia).
@@ -31,8 +27,6 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (reduced) return; // native scroll, no smoothing
 
-    gsap.registerPlugin(ScrollTrigger);
-
     const instance = new Lenis({
       duration: 1.2,
       // expo-out: fast start, long graceful settle
@@ -40,20 +34,21 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
       smoothWheel: true,
     });
 
-    instance.on("scroll", ScrollTrigger.update);
+    let raf = 0;
+    const loop = (time: number) => {
+      instance.raf(time); // rAF passes ms, which is what Lenis expects
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
 
-    const tick = (time: number) => instance.raf(time * 1000); // gsap time is seconds
-    gsap.ticker.add(tick);
-    gsap.ticker.lagSmoothing(0);
-
-    // Exposing a freshly-created external resource (the Lenis instance) through
-    // context is exactly the case where setState-in-effect is correct: children
-    // must re-render to receive it. This is not a cascading-render bug.
+    // Exposing a freshly-created external resource through context is exactly
+    // the case where setState-in-effect is correct: children must re-render to
+    // receive it. Not a cascading-render bug.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLenis(instance);
 
     return () => {
-      gsap.ticker.remove(tick);
+      cancelAnimationFrame(raf);
       instance.destroy();
       setLenis(null);
     };

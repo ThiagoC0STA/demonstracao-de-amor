@@ -128,6 +128,17 @@ export const CONTENT = {
     "Só sei que desde então tudo ficou um pouco mais inteiro.",
   ],
 
+  /** Cosmic interlude — the signature full-bleed beat ("flutuando com você"). */
+  cosmic: {
+    eyebrow: "nós dois",
+    line: "com você, o resto do mundo virou só paisagem",
+    sub: "flutuando com você",
+    media: {
+      type: "image",
+      src: "/us/286f031f-c060-4e40-85d5-80a7ae11556c.jpg",
+    } satisfies MediaRef,
+  },
+
   /** Section 3 — horizontal pinned timeline. 5 cards. */
   timeline: [
     {
@@ -152,7 +163,7 @@ export const CONTENT = {
       date: "Quando apertou",
       title: "Juntos",
       description: "A gente aprendeu que o difícil cabe quando é a dois.",
-      media: { type: "image", src: "/us/286f031f-c060-4e40-85d5-80a7ae11556c.jpg" },
+      media: { type: "image", src: "/us/72FB4F53-438F-4874-9B51-47A31B54748E.jpg" },
     },
     {
       date: "Agora",
