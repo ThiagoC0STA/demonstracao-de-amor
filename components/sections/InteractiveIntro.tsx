@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { CONTENT, DURATION } from "@/lib/constants";
-import { EASE_SMOOTH } from "@/lib/animations";
+import { EASE_MICRO, EASE_SMOOTH } from "@/lib/animations";
 import { mulberry32 } from "@/lib/seededRandom";
 import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
 
@@ -13,7 +13,9 @@ import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvid
  *
  * Flow: a short cinematic build-up of lines → the question "quer ser minha pra
  * sempre?" with a playful dodging "No" + a growing "Yes" → on "Yes" a gold
- * heart-burst, then it dissolves into the letter (`onComplete`).
+ * heart-burst, then it dissolves into the letter (`onComplete`). The dissolve is
+ * a cross-fade with a slight push-in + blur (not a flat fade) so it feels like
+ * the camera moving into the piece rather than a curtain dropping.
  */
 type Phase = "buildup" | "question" | "celebrate";
 
@@ -27,14 +29,13 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
 
   // No-button dodge state.
   const [noDodges, setNoDodges] = useState(0);
-  const [noPos, setNoPos] = useState({ x: 0, y: 0 });
+  const [noPos, setNoPos] = useState({ x: 0, y: 0, rot: 0 });
 
   // Advance the build-up; transition to the question at the end. All setState
   // happens inside timeouts (async), never synchronously in the effect body.
   useEffect(() => {
     if (phase !== "buildup") return;
     const isLast = lineIdx >= lines.length - 1;
-    // Each line gets a comfortable, readable beat (was way too short for line 0).
     const delay = reduced ? 1100 : 3200;
     const t = setTimeout(() => {
       if (isLast) setPhase("question");
@@ -47,7 +48,11 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
     if (reduced) return;
     const next = noDodges + 1;
     const rng = mulberry32(1009 + next * 97);
-    setNoPos({ x: (rng() - 0.5) * 260, y: (rng() - 0.5) * 180 });
+    setNoPos({
+      x: (rng() - 0.5) * 280,
+      y: (rng() - 0.5) * 190,
+      rot: (rng() - 0.5) * 24,
+    });
     setNoDodges(next);
   };
 
@@ -57,7 +62,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   };
 
   const yesScale = 1 + Math.min(noDodges * 0.14, 0.8);
-  const noScale = Math.max(1 - noDodges * 0.1, 0.5);
+  const noScale = Math.max(1 - noDodges * 0.1, 0.45);
 
   // Seeded gold heart-burst (pure — no Math.random in render).
   const burst = useMemo(() => {
@@ -83,8 +88,12 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
           key="gate"
           className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden bg-night px-6"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: DURATION.cinematic, ease: [0.22, 1, 0.36, 1] }}
+          exit={
+            reduced
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 1.06, filter: "blur(6px)" }
+          }
+          transition={{ duration: DURATION.cinematic, ease: EASE_SMOOTH }}
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_60%,rgba(158,43,63,0.16),transparent_62%)]" />
 
@@ -93,7 +102,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
             <AnimatePresence mode="wait">
               <motion.p
                 key={lineIdx}
-                className="relative max-w-[20ch] text-center font-display text-3xl italic leading-tight text-cream sm:text-5xl"
+                className="relative max-w-[20ch] text-center font-display text-3xl italic leading-tight tracking-display text-cream sm:text-5xl"
                 initial={
                   reduced
                     ? { opacity: 0 }
@@ -124,7 +133,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.9, ease: EASE_SMOOTH }}
             >
-              <h1 className="max-w-[16ch] font-display text-4xl italic leading-tight text-cream sm:text-6xl">
+              <h1 className="max-w-[16ch] font-display text-4xl italic leading-tight tracking-display text-cream sm:text-6xl">
                 {CONTENT.gate.question}
               </h1>
 
@@ -135,7 +144,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                   onClick={handleYes}
                   animate={{ scale: yesScale }}
                   whileHover={{ y: -2 }}
-                  transition={{ duration: 0.25, ease: EASE_SMOOTH }}
+                  transition={{ duration: 0.25, ease: EASE_MICRO }}
                   className="rounded-md bg-gold px-8 py-3 font-sans text-base font-medium text-night transition-colors duration-200 hover:bg-gold-bright"
                 >
                   {CONTENT.gate.yes}
@@ -150,8 +159,8 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                     e.preventDefault();
                     dodge();
                   }}
-                  animate={{ x: noPos.x, y: noPos.y, scale: noScale }}
-                  transition={{ duration: 0.4, ease: [0.33, 1, 0.68, 1] }}
+                  animate={{ x: noPos.x, y: noPos.y, rotate: noPos.rot, scale: noScale }}
+                  transition={{ type: "spring", stiffness: 380, damping: 22 }}
                   className="rounded-md border border-cream/25 px-6 py-3 font-sans text-sm text-cream/65 transition-colors duration-200 hover:border-cream/40"
                 >
                   {CONTENT.gate.no}
@@ -194,7 +203,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.9, ease: EASE_SMOOTH }}
               >
-                <h1 className="font-display text-5xl italic text-gold-bright sm:text-7xl">
+                <h1 className="font-display text-5xl italic tracking-display text-gold-bright sm:text-7xl">
                   {CONTENT.gate.celebration}
                 </h1>
                 <p className="font-display text-lg italic text-cream/70 sm:text-xl">

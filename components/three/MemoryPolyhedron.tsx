@@ -3,20 +3,20 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useLenis } from "@/hooks/useLenis";
 
 /**
- * A dodecahedron of photos that rotates slowly and speeds up with scroll
- * velocity.
+ * A dodecahedron of photos whose camera is *driven by scroll*: as you roll
+ * through the (tall, sticky) Memory section the camera orbits the solid and
+ * pushes in, revealing the faces in sequence. On a mouse, the pointer adds a
+ * gentle parallax on top. It also keeps a slow idle spin so it never feels dead.
  *
- * Texturing the actual pentagonal faces requires painful UV work, so instead we
- * place 12 flat planes on the 12 face-normals of a dodecahedron. Those normals
- * are exactly the vertices of an icosahedron (golden-ratio coordinates), which
- * we hardcode and normalize. Each plane is oriented outward via a quaternion
- * that rotates +Z onto its normal.
+ * Texturing real pentagonal faces needs painful UV work, so instead we place 12
+ * flat planes on the 12 face-normals of a dodecahedron. Those normals are the
+ * vertices of an icosahedron (golden-ratio coords), hardcoded and normalized;
+ * each plane is oriented outward via a quaternion rotating +Z onto its normal.
  *
- * Textures default to generated gold gradients so the scene always renders.
- * To use real photos, swap `makeGradientTexture` for a TextureLoader on
+ * Textures default to generated gold gradients so the scene always renders. To
+ * use real photos, swap `makeGradientTexture` for a TextureLoader on
  * ASSETS.memoryPhotos (see README).
  */
 
@@ -51,9 +51,9 @@ function makeGradientTexture(index: number): THREE.Texture {
   const x0 = s / 2 + (Math.cos(angle) * s) / 2;
   const y0 = s / 2 + (Math.sin(angle) * s) / 2;
   const grad = ctx.createLinearGradient(s - x0, s - y0, x0, y0);
-  grad.addColorStop(0, "#14141A");
+  grad.addColorStop(0, "#160e1d");
   grad.addColorStop(0.5, index % 2 ? "#3a2f24" : "#2a2520");
-  grad.addColorStop(1, "#D4AF7A");
+  grad.addColorStop(1, "#e5b874");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, s, s);
 
@@ -72,7 +72,7 @@ function makeGradientTexture(index: number): THREE.Texture {
   ctx.fillRect(0, 0, s, s);
 
   // A faint heart mark so placeholders read as "photo slots".
-  ctx.fillStyle = "rgba(245,241,234,0.10)";
+  ctx.fillStyle = "rgba(251,248,241,0.10)";
   ctx.font = `${s * 0.3}px serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -83,10 +83,16 @@ function makeGradientTexture(index: number): THREE.Texture {
   return tex;
 }
 
-export function MemoryPolyhedron({ reduced = false }: { reduced?: boolean }) {
+export function MemoryPolyhedron({
+  reduced = false,
+  progress,
+}: {
+  reduced?: boolean;
+  /** Live scroll progress 0..1 for this section (mutated outside React). */
+  progress?: { current: number };
+}) {
   const groupRef = useRef<THREE.Group>(null);
-  const velocity = useRef(0);
-  const lenis = useLenis();
+  const idle = useRef(0);
 
   // 6 unique textures, reused on the 12 faces (i % 6).
   const textures = useMemo(
@@ -112,27 +118,35 @@ export function MemoryPolyhedron({ reduced = false }: { reduced?: boolean }) {
     [textures],
   );
 
-  // Track scroll velocity from Lenis; decays back to 0 each frame.
-  useEffect(() => {
-    if (!lenis) return;
-    const handler = ({ velocity: v }: { velocity: number }) => {
-      velocity.current = v;
-    };
-    lenis.on("scroll", handler);
-    return () => lenis.off("scroll", handler);
-  }, [lenis]);
-
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const g = groupRef.current;
-    if (!g || reduced) return; // hold still for reduced-motion users
-    const boost = THREE.MathUtils.clamp(velocity.current * 0.015, -0.6, 0.6);
-    g.rotation.y += (0.12 + boost) * delta;
-    g.rotation.x += 0.04 * delta;
-    velocity.current *= Math.exp(-6 * delta); // frame-rate-independent decay
+    if (!g || reduced) return; // a pleasant static angle is set via props below
+
+    const p = progress?.current ?? 0;
+    idle.current += delta * 0.12;
+
+    // Pointer parallax (normalized -1..1), zero on touch where pointer stays 0.
+    const px = state.pointer.x;
+    const py = state.pointer.y;
+
+    // Scroll scrubs ~1.5 turns; idle keeps it alive; pointer nudges on top.
+    const targetY = idle.current + p * Math.PI * 1.5 + px * 0.35;
+    const targetX = 0.12 + p * 0.5 - py * 0.25;
+    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, targetY, 0.12);
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, targetX, 0.1);
+
+    // Camera orbits in and parallaxes with the pointer; always looks at center.
+    const cam = state.camera;
+    cam.position.z = THREE.MathUtils.lerp(cam.position.z, 6.2 - p * 1.8, 0.06);
+    cam.position.x = THREE.MathUtils.lerp(cam.position.x, px * 0.6, 0.05);
+    cam.position.y = THREE.MathUtils.lerp(cam.position.y, py * 0.6, 0.05);
+    cam.lookAt(0, 0, 0);
   });
 
   return (
-    <group ref={groupRef}>
+    // A gentle resting tilt so the reduced-motion / first frame already looks
+    // composed rather than face-on.
+    <group ref={groupRef} rotation={[0.3, 0.5, 0]}>
       {faces.map((face, i) => (
         <mesh key={i} position={face.position} quaternion={face.quaternion}>
           <planeGeometry args={[PLANE, PLANE]} />

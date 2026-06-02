@@ -24,10 +24,16 @@ export const EASE_SMOOTH = smooth;
 export const EASE_DRAMATIC = dramatic;
 export const EASE_MICRO = micro;
 
-/** Equivalent GSAP ease strings for the same curves (CustomEase-free). */
+/**
+ * Equivalent GSAP ease strings for the same three curves (CustomEase-free) so
+ * GSAP-driven motion (mouse parallax, magnetic CTAs, draws) matches the Motion
+ * curves. `dramatic` is a heavy in-out to mirror the cinematic curtain feel;
+ * `smooth` is expo-out; `micro` is the crisp snap for pointer interactions.
+ */
 export const GSAP_EASE = {
+  micro: "power3.out",
   smooth: "expo.out",
-  dramatic: "expo.out",
+  dramatic: "power4.inOut",
 } as const;
 
 // ---------------------------------------------------------------------------

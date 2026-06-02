@@ -1,18 +1,23 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { useRef } from "react";
 import { CONTENT } from "@/lib/constants";
-import { letterParagraph } from "@/lib/animations";
+import { EASE_DRAMATIC } from "@/lib/animations";
+import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
 
 /**
  * Section 6 — The Letter (climax).
  *
  * The dark memory scene bleeds into warm paper (no pure-white band). The letter
- * reads like a letter, not a poster: Inter body, left-aligned, comfortable
- * measure, a drop cap opening the first paragraph, an ornament, and a
- * gold-ink handwritten signature.
+ * reads like a letter: Newsreader body, left-aligned, comfortable measure, a
+ * drop cap. Each paragraph's ink darkens and settles as it scrolls into reading
+ * position (tied to scroll, not a one-shot fade). The signature writes itself —
+ * the script wipes on left-to-right like a pen, then an underline flourish draws.
  */
 export function Letter() {
+  const reduced = useReducedMotionPref();
+
   return (
     <section className="paper-texture section-pad relative px-6">
       {/* dark -> paper bleed coming out of the memory scene */}
@@ -34,35 +39,85 @@ export function Letter() {
         </div>
 
         {CONTENT.letter.paragraphs.map((para, i) => (
-          <motion.p
-            key={i}
-            variants={letterParagraph}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.6 }}
-            className={`mb-7 text-left font-sans text-[1.15rem] font-light leading-[1.7] text-neutral-800 sm:text-[1.2rem] ${
-              i === 0
-                ? "first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.8] first-letter:text-gold-ink"
-                : ""
-            }`}
-          >
+          <Paragraph key={i} index={i} reduced={reduced}>
             {para}
-          </motion.p>
+          </Paragraph>
         ))}
 
-        <div className="mt-16 flex justify-end">
-          <motion.p
-            variants={letterParagraph}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.8 }}
-            className="-rotate-2 font-signature text-[length:var(--text-signature)] text-gold-ink"
-          >
-            {CONTENT.letter.signature}
-          </motion.p>
-        </div>
+        <Signature text={CONTENT.letter.signature} reduced={reduced} />
       </article>
     </section>
+  );
+}
+
+function Paragraph({
+  index,
+  reduced,
+  children,
+}: {
+  index: number;
+  reduced: boolean;
+  children: string;
+}) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 0.9", "start 0.5"],
+  });
+  const opacity = useTransform(scrollYProgress, [0, 1], [0.12, 1]);
+  const y = useTransform(scrollYProgress, [0, 1], [22, 0]);
+
+  const dropCap =
+    index === 0
+      ? "first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.8] first-letter:text-gold-ink"
+      : "";
+  const cls = `mb-7 text-left font-serif text-[1.18rem] leading-[1.75] text-neutral-800 sm:text-[1.25rem] ${dropCap}`;
+
+  if (reduced) {
+    return <p className={cls}>{children}</p>;
+  }
+
+  return (
+    <motion.p ref={ref} style={{ opacity, y }} className={cls}>
+      {children}
+    </motion.p>
+  );
+}
+
+function Signature({ text, reduced }: { text: string; reduced: boolean }) {
+  return (
+    <div className="mt-16 flex flex-col items-end">
+      <motion.p
+        initial={reduced ? { opacity: 0 } : { clipPath: "inset(0 100% 0 0)" }}
+        whileInView={reduced ? { opacity: 1 } : { clipPath: "inset(0 0% 0 0)" }}
+        viewport={{ once: true, amount: 0.8 }}
+        transition={{ duration: reduced ? 0.4 : 1.8, ease: EASE_DRAMATIC }}
+        className="-rotate-2 font-signature text-[length:var(--text-signature)] leading-none text-gold-ink"
+      >
+        {text}
+      </motion.p>
+
+      {/* underline flourish that draws like a pen after the words */}
+      <motion.svg
+        width="240"
+        height="34"
+        viewBox="0 0 240 34"
+        fill="none"
+        aria-hidden
+        className="-mt-1 mr-2 text-gold-ink"
+      >
+        <motion.path
+          d="M6 22 C 56 8, 150 34, 234 12"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          initial={{ pathLength: reduced ? 1 : 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true, amount: 0.8 }}
+          transition={{ duration: reduced ? 0 : 1.1, ease: EASE_DRAMATIC, delay: reduced ? 0 : 1.3 }}
+        />
+      </motion.svg>
+    </div>
   );
 }
 

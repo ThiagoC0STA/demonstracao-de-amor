@@ -17,10 +17,6 @@ import { useLenis } from "@/hooks/useLenis";
 const SceneFallback = () => <div className="h-svh w-full bg-night" />;
 
 // 3D scenes are client-only and heavy, so they are code-split and never SSR'd.
-const Hero = dynamic(
-  () => import("@/components/sections/Hero").then((m) => m.Hero),
-  { ssr: false, loading: SceneFallback },
-);
 const MemoryScene = dynamic(
   () => import("@/components/sections/MemoryScene").then((m) => m.MemoryScene),
   { ssr: false, loading: SceneFallback },
@@ -52,7 +48,6 @@ export default function Home() {
       <KonamiEasterEgg />
 
       <main>
-        <Hero />
         <Opening />
         <Timeline />
         <WhatILove />

@@ -13,36 +13,51 @@
 // Design tokens
 // ---------------------------------------------------------------------------
 
+// Single source of truth for color. These mirror the CSS custom properties in
+// app/globals.css (@theme) and the literals used in the 3D scenes — keep all
+// three in sync. The 3D lights/materials read `gold`/`goldBright` so the canvas
+// light matches the CSS gold exactly (no two-tone gold across the page).
 export const PALETTE = {
-  bgPrimary: "#0A0A0B", // deep black, almost charcoal
-  bgSecondary: "#14141A", // slight lift
-  gold: "#D4AF7A", // champagne, not yellow
-  goldBright: "#E8C896", // highlights
-  textPrimary: "#F5F1EA", // warm off-white
-  textSecondary: "#A8A29E", // muted
-  paper: "#F2EBE0", // letter section background
+  bgPrimary: "#0a060d", // deep twilight violet-black
+  bgSecondary: "#160e1d", // lifted surface
+  gold: "#e5b874", // the single accent — warm champagne, luminous not yellow
+  goldBright: "#ffe2aa", // highlight
+  textPrimary: "#fbf8f1", // warm off-white
+  textSecondary: "#b4acb0", // muted, warmer gray
+  paper: "#f2ebe0", // letter section background
   goldInk: "#9c7a45", // gold that stays legible on the light paper
 } as const;
 
-/** Cubic-bezier control points, reusable by both CSS and JS animation libs. */
+/**
+ * Three easing curves, chosen for real contrast (the old set was three
+ * near-identical ease-outs). Mirrored as CSS variables in globals.css and as
+ * GSAP ease strings in lib/animations.ts.
+ *
+ * - micro: crisp snap for hover/focus/tap — fast attack, controlled settle.
+ * - smooth: the default reveal — expo-out, fast start then a long glide to rest.
+ * - dramatic: weighty curtain/wipe — easeInOut, anticipates then settles.
+ */
 export const EASING = {
-  /** signature spring-out — fast start, long graceful settle. The default. */
+  /** crisp hover/focus/tap curve (120-200ms) */
+  micro: [0.4, 0, 0.2, 1] as const,
+  /** the default reveal — fast start, long graceful settle */
   smooth: [0.16, 1, 0.3, 1] as const,
-  /** asymmetric expressive ease-out for big cinematic curtain beats */
-  dramatic: [0.22, 1, 0.36, 1] as const,
-  /** crisp hover/focus/tap curve (150-200ms) */
-  micro: [0.33, 1, 0.68, 1] as const,
+  /** big cinematic curtain / wipe beats — heavy in-out */
+  dramatic: [0.76, 0, 0.24, 1] as const,
 } as const;
 
 /** Durations in seconds (Framer/Motion + GSAP both take seconds). */
 export const DURATION = {
   /** hover / focus / tap — crisp */
   micro: 0.18,
+  /** quick UI transitions */
   snappy: 0.4,
   /** the standard reveal */
   standard: 0.7,
   /** big cinematic beats */
   cinematic: 1.4,
+  /** the slowest, most deliberate signature beats (curtains, draws) */
+  epic: 2.2,
 } as const;
 
 /** Seconds between staggered children (80ms). */

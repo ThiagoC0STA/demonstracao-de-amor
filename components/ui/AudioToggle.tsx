@@ -79,8 +79,8 @@ export function AudioToggle() {
       aria-label={playing ? "Pausar música" : "Tocar música"}
       aria-pressed={playing}
       data-cursor
-      className={`fixed bottom-6 right-6 z-[200] flex h-11 w-11 items-center justify-center rounded-full border border-gold/30 bg-night-soft/70 text-gold backdrop-blur-sm transition-all duration-700 ease-[var(--ease-smooth)] hover:border-gold/70 hover:opacity-100 ${
-        visible ? "opacity-60" : "pointer-events-none opacity-0"
+      className={`fixed bottom-6 right-6 z-[200] flex h-12 w-12 items-center justify-center rounded-full glass-panel text-gold transition-all duration-700 ease-[var(--ease-smooth)] hover:scale-110 hover:shadow-[0_0_25px_rgba(229,184,116,0.5)] ${
+        visible ? "opacity-80 hover:opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
       {playing ? <SoundOnIcon /> : <SoundOffIcon />}

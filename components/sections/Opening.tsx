@@ -1,18 +1,24 @@
 "use client";
 
-import { motion, useScroll, useTransform, type Variants } from "motion/react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import { useRef } from "react";
 import { CONTENT } from "@/lib/constants";
-import { EASE_SMOOTH } from "@/lib/animations";
 import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
 
 /**
  * Section 2 — Opening.
  *
- * As the section enters view, each line reveals word by word (lift + de-blur)
- * on the signature curve — no jittery char-typewriter. The background eases
- * from black to a soft wine glow driven by scroll progress. The last line is
- * the gold-italic accent.
+ * Kinetic typography driven by scroll, not by an on-enter trigger. The section
+ * is tall and the type is sticky, so as you scroll each line rises out from
+ * behind a mask (scrubbed to scroll progress) — rolling the page *is* the
+ * reveal. Type is left-aligned and big; italic is reserved for the single gold
+ * accent line, which gets a rule that draws itself underneath. A wine glow
+ * warms the background as you advance.
  */
 export function Opening() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -20,89 +26,102 @@ export function Opening() {
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start end", "center center"],
+    offset: ["start start", "end end"],
   });
-  const warmth = useTransform(scrollYProgress, [0, 1], [0, 1]);
+
+  // Background warmth + a slow parallax drift on the whole stack.
+  const warmth = useTransform(scrollYProgress, [0, 0.6], [0, 1]);
+  const glowY = useTransform(scrollYProgress, [0, 1], ["8%", "-8%"]);
+
+  const lines = CONTENT.opening;
 
   return (
-    <section
-      ref={sectionRef}
-      className="section-pad relative flex min-h-svh items-center justify-center overflow-hidden bg-night px-6"
-    >
-      <motion.div
-        aria-hidden
-        style={{ opacity: warmth }}
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(158,43,63,0.16),rgba(12,11,13,0)_70%)]"
-      />
+    <section ref={sectionRef} className="relative h-[200svh] bg-night">
+      <div className="sticky top-0 flex h-svh items-center overflow-hidden px-6">
+        <motion.div
+          aria-hidden
+          style={reduced ? undefined : { opacity: warmth, y: glowY }}
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_70%,rgba(158,43,63,0.20),rgba(12,11,13,0)_62%)]"
+        />
 
-      <div className="relative z-10 mx-auto max-w-[60ch] text-center">
-        <span className="meta-label mb-12 flex items-center justify-center gap-3">
-          <span className="h-px w-10 bg-gold/40" />
-          o início
-          <span className="h-px w-10 bg-gold/40" />
-        </span>
-        <div className="space-y-6">
-          {CONTENT.opening.map((line, i) => (
-            <Line
-              key={i}
-              text={line}
-              delay={i * 0.4}
-              reduced={reduced}
-              accent={i === CONTENT.opening.length - 1}
-            />
-          ))}
+        <div className="relative z-10 mx-auto w-full max-w-5xl">
+          <span className="meta-label mb-10 flex items-center gap-3">
+            <span className="h-px w-12 bg-gold/40" />
+            o início
+          </span>
+
+          <div className="space-y-3 sm:space-y-4">
+            {lines.map((line, i) => {
+              const accent = i === lines.length - 1;
+              // Each line gets its own slice of the scroll so they cascade.
+              const start = 0.06 + i * 0.16;
+              return (
+                <MaskLine
+                  key={i}
+                  progress={scrollYProgress}
+                  range={[start, start + 0.4]}
+                  reduced={reduced}
+                  accent={accent}
+                >
+                  {line}
+                </MaskLine>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function Line({
-  text,
-  delay,
+function MaskLine({
+  progress,
+  range,
   reduced,
   accent,
+  children,
 }: {
-  text: string;
-  delay: number;
+  progress: MotionValue<number>;
+  range: [number, number];
   reduced: boolean;
   accent: boolean;
+  children: string;
 }) {
-  const words = text.split(" ");
+  const y = useTransform(progress, range, ["115%", "0%"]);
+  const opacity = useTransform(progress, range, [0, 1]);
+  // The accent rule draws after the line has mostly arrived.
+  const ruleScale = useTransform(
+    progress,
+    [range[1] - 0.12, range[1] + 0.12],
+    [0, 1],
+  );
 
-  const container: Variants = {
-    hidden: {},
-    visible: {
-      transition: { staggerChildren: reduced ? 0 : 0.05, delayChildren: delay },
-    },
-  };
-  const word: Variants = reduced
-    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
-    : {
-        hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
-        visible: {
-          opacity: 1,
-          y: 0,
-          filter: "blur(0px)",
-          transition: { duration: 0.7, ease: EASE_SMOOTH },
-        },
-      };
+  const cls = `block font-display leading-[1.05] tracking-display ${
+    accent
+      ? "italic text-gold-bright text-[length:var(--text-display)]"
+      : "text-cream text-[length:var(--text-display)] font-medium"
+  }`;
+
+  if (reduced) {
+    return (
+      <p className={`max-w-[26ch] ${cls}`}>
+        {children}
+        {accent && <span className="mt-4 block h-px w-40 bg-gold/60" />}
+      </p>
+    );
+  }
 
   return (
-    <motion.p
-      variants={container}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.6 }}
-      className={`mx-auto max-w-[34ch] font-display text-3xl leading-[1.2] tracking-tight sm:text-5xl ${
-        accent ? "italic text-gold-bright" : "text-cream"
-      }`}
-    >
-      {words.map((w, i) => (
-        <motion.span key={i} variants={word} className="mr-[0.25em] inline-block">
-          {w}
-        </motion.span>
-      ))}
-    </motion.p>
+    <div className="overflow-hidden pb-[0.12em]">
+      <motion.p style={{ y, opacity }} className={`max-w-[26ch] ${cls}`}>
+        {children}
+      </motion.p>
+      {accent && (
+        <motion.span
+          style={{ scaleX: ruleScale }}
+          className="mt-5 block h-px w-40 origin-left bg-gradient-to-r from-gold to-transparent"
+        />
+      )}
+    </div>
   );
 }

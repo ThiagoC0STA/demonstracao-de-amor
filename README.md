@@ -1,10 +1,11 @@
 # Para Lilian — uma carta para você
 
-A cinematic, single-page love letter. Eight scenes paced like a film: a typed
-preloader, a 3D hero, a typewriter opening, a pinned horizontal timeline, a
-"what I love about you" grid, a rotating 3D photo dodecahedron, the letter
-itself on paper, and a glowing 3D heart finale — with smooth scroll, ambient
-audio, a custom cursor, and two easter eggs.
+A cinematic, single-page love letter paced like a film: an interactive opening
+gate, a scroll-revealed opening, a vertical photo timeline with parallax, a
+"what I love about you" grid of flip-cards, a scroll-driven 3D photo
+dodecahedron, the letter itself on paper, and a finale where gold dust gathers
+into a heart — with smooth scroll, ambient audio, a custom cursor, mouse
+presence (parallax / magnetic / tilt), and two easter eggs.
 
 Everything you'd want to personalize lives in **one file**:
 [`lib/constants.ts`](lib/constants.ts).
@@ -35,16 +36,15 @@ component code needs to change.
 
 | Field | What it controls |
 |---|---|
-| `name` | The name rendered in 3D in the hero. |
+| `name` | Her name. Used in the copy (and available to reuse anywhere). |
 | `gate.buildup[]` | The cinematic build-up lines in the **interactive opening**. |
 | `gate.question` | The yes/no question ("quer ser minha pra sempre?"). |
 | `gate.yes` / `gate.no` | The button labels. "No" softly dodges; "Yes" celebrates → reveals the letter. |
 | `gate.celebration` / `gate.celebrationSub` | The two lines shown after "Yes". |
-| `hero.subtitle` | The italic line under the 3D name. |
-| `opening[]` | The two (or more) typewriter lines in Section 2. Keep them short. |
+| `opening[]` | The opening lines (Section 2), revealed kinetically on scroll. Keep them short. |
 | `timeline[]` | The 5 timeline cards. Each: `{ date, title, description }`. The `date` is just a label ("O começo", "2021"…), not a real date — write anything. |
 | `qualities[]` | The 6 cards in "o que eu amo em você". Each: `{ title, description }`. |
-| `memoryPhrases[]` | Phrases that cross-fade over the rotating 3D photo scene. |
+| `memoryPhrases[]` | Phrases that cross-fade over the scroll-driven 3D photo scene. |
 | `letter.paragraphs[]` | The body of the letter, revealed one paragraph at a time. Add or remove freely. |
 | `letter.signature` | The sign-off, shown in the handwriting font. |
 | `ending.title` | The big italic line in the finale. |
@@ -105,16 +105,13 @@ for `useTexture([...ASSETS.memoryPhotos])` (paths in `ASSETS.memoryPhotos`).
 
 ---
 
-## The 3D display typeface
+## Fonts
 
-The extruded hero name needs a Three.js typeface JSON at
-`public/fonts/display.typeface.json` (currently **Gentilis**, an elegant serif
-from the Three.js examples). To change it, convert any font with
-[facetype.js](https://gero3.github.io/facetype.js/) and replace that file. The
-path is set in `components/three/Hero3DText.tsx` (`FONT_PATH`).
-
-UI fonts (Playfair Display, Inter, Caveat) are loaded and self-hosted by
-`next/font` in [`app/layout.tsx`](app/layout.tsx).
+All type is loaded and self-hosted by `next/font/google` in
+[`app/layout.tsx`](app/layout.tsx): **Fraunces** for display (with the
+optical-size axis, so headlines grow more dramatic as they scale), **Newsreader**
+for the letter body, **Inter** for UI / meta labels, and **Pinyon Script** for
+the signature.
 
 ---
 
@@ -125,13 +122,16 @@ Palette, easings, durations and stagger timing live in `lib/constants.ts`
 variables / Tailwind v4 theme tokens in [`app/globals.css`](app/globals.css).
 Utilities generated from the theme: `bg-night`, `bg-night-soft`, `text-gold`,
 `text-gold-bright`, `text-cream`, `text-muted`, `text-paper`, `font-display`,
-`font-sans`, `font-signature`, `ease-smooth`, `ease-dramatic`.
+`font-serif`, `font-sans`, `font-signature`, `text-hero` / `text-display` /
+`text-h2`, `ease-micro`, `ease-smooth`, `ease-dramatic`. Plus `.card-surface`
+(hairline content surface) and the `.tracking-display` / `.nums-lining` type
+helpers.
 
 ---
 
 ## Easter eggs
 
-- **Click the 3D name "Lilian" 5 times** in the hero → a gold confetti burst.
+- **Answer "sim, pra sempre"** on the opening gate → a gold heart-burst.
 - **Konami code** (`↑ ↑ ↓ ↓ ← → ← → b a`) anywhere → reveals `konamiMessage`.
 
 ---
@@ -139,9 +139,10 @@ Utilities generated from the theme: `bg-night`, `bg-night-soft`, `text-gold`,
 ## Accessibility / reduced motion
 
 Everything respects `prefers-reduced-motion`. With it on: Lenis smooth-scroll is
-disabled (native scroll), the preloader/typewriters show full text immediately,
-the timeline becomes a vertical stack instead of a pinned horizontal scroll, and
-CSS animations are neutralized.
+disabled (native scroll), the intro gate and scroll-scrubbed reveals show their
+content immediately, the 3D scenes freeze (the Ending heart renders already
+formed), mouse parallax / magnetic / tilt are skipped, and CSS animations are
+neutralized.
 
 ---
 
@@ -169,21 +170,21 @@ app/
   icon.svg              gold-heart favicon
   opengraph-image.tsx   generated OG image
 components/
-  sections/             Preloader, Hero, Opening, Timeline, WhatILove,
+  sections/             InteractiveIntro, Opening, Timeline, WhatILove,
                         MemoryScene, Letter, Ending
-  three/                ParticleField, Hero3DText, MemoryPolyhedron, HeartGeometry
-  ui/                   CustomCursor, AudioToggle, ScrollIndicator, KonamiEasterEgg
+  three/                ParticleField, MemoryPolyhedron, HeartParticles
+  ui/                   CustomCursor, AudioToggle, MediaFrame, KonamiEasterEgg
   providers/            LenisProvider, ReducedMotionProvider
 hooks/
   useLenis.ts           shared Lenis instance + scrollTo helper
-  useGsap.ts            registers GSAP plugins; re-exports gsap/ScrollTrigger/useGSAP
+  useMagnetic.ts        pointer-magnetic CTA (gsap.quickTo)
+  useTilt.ts            pointer-tilt for cards/photos (gsap.quickTo)
 lib/
   constants.ts          <- all editable content + design tokens
-  animations.ts         reusable Motion variants
+  animations.ts         reusable Motion variants + easing tuples
   seededRandom.ts       pure PRNG for particle layouts
 public/
   audio/ambient.mp3            ambient track (swap freely)
-  fonts/display.typeface.json  3D hero typeface
   images/                      your photos (memory-1..6.jpg) — optional
 ```
 
@@ -205,7 +206,6 @@ brief assumed. Adjustments made for compatibility:
 - **`tailwindcss-animate` skipped** — it targets Tailwind v3; GSAP, Motion and a
   few CSS keyframes cover the animation needs.
 - **shadcn/ui skipped** — the UI is fully bespoke; nothing shadcn would improve.
-- The 3D hero name uses the bundled Gentilis serif typeface (no Playfair
-  typeface JSON exists out of the box); see "The 3D display typeface" above.
-- Hook file named `hooks/useGsap.ts` (the brief wrote `useGSAP.ts`) to avoid a
-  name clash with the imported `useGSAP` identifier on case-insensitive systems.
+- **Type:** Fraunces (display, with the optical-size axis), Newsreader (the
+  letter body), Inter (UI / meta), Pinyon Script (the signature) — all loaded via
+  `next/font/google`.

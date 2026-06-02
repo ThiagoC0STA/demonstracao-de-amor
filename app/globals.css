@@ -3,54 +3,60 @@
 /* ===========================================================================
    Design system — Tailwind v4 is configured CSS-first via @theme.
    Tokens here generate utilities: bg-night, text-gold, font-display, etc.
-   Font vars (--font-playfair…) are injected at runtime by next/font in
+   Font vars (--font-fraunces…) are injected at runtime by next/font in
    app/layout.tsx; `@theme inline` makes the utilities resolve them per-element.
    =========================================================================== */
 @theme inline {
-  --color-night: #0c0b0d; /* bg-primary — warm near-black, never pure */
-  --color-night-soft: #141019; /* bg-secondary — lifted surface */
-  --color-gold: #d4af7a; /* the single accent */
-  --color-gold-bright: #e8c896; /* highlight */
-  --color-cream: #f5f1ea; /* text-primary */
-  --color-muted: #a8a29e; /* text-secondary */
+  --color-night: #0a060d; /* bg-primary — deeper twilight violet-black */
+  --color-night-soft: #160e1d; /* bg-secondary — lifted surface */
+  --color-gold: #e5b874; /* the single accent - warmer, more luminous */
+  --color-gold-bright: #ffe2aa; /* highlight */
+  --color-cream: #fbf8f1; /* text-primary */
+  --color-muted: #b4acb0; /* text-secondary - warmer gray */
   --color-rose: #c0455c; /* atmosphere only */
-  --color-wine: #9e2b3f; /* atmosphere only */
+  --color-wine: #6e1c2c; /* deeper wine for rim lighting */
   --color-paper: #f2ebe0; /* letter bg */
   --color-gold-ink: #9c7a45; /* gold legible on the light paper */
 
-  --font-display: var(--font-playfair), Georgia, serif;
+  /* Fraunces (display) + Newsreader (reading serif) + Inter (UI) + Pinyon
+     (signature). Generates font-display / font-serif / font-sans / font-signature. */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-signature: var(--font-caveat), cursive;
+  --font-signature: var(--font-pinyon), cursive;
 
-  /* Fluid type scale — generates text-display / text-h2 / text-lead /
-     text-meta / text-signature utilities. */
+  /* Fluid type scale — generates text-hero / text-display / text-h2 / text-lead
+     / text-meta / text-signature utilities. */
+  --text-hero: clamp(3rem, 9vw + 1rem, 9rem);
   --text-display: clamp(2.75rem, 6vw + 1rem, 6.5rem);
-  --text-h2: clamp(2rem, 4vw + 0.5rem, 4rem);
+  --text-h2: clamp(2rem, 4vw + 0.5rem, 4.25rem);
   --text-lead: clamp(1.5rem, 2.2vw + 0.75rem, 2.5rem);
   --text-meta: clamp(0.7rem, 0.4vw + 0.6rem, 0.8rem);
-  --text-signature: clamp(2.5rem, 5vw, 4.5rem);
+  --text-signature: clamp(3rem, 6vw, 5.5rem);
 
-  /* Easing tokens, mirrored from lib/constants.ts */
-  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1); /* signature spring-out */
-  --ease-dramatic: cubic-bezier(0.22, 1, 0.36, 1); /* expressive curtain */
-  --ease-micro: cubic-bezier(0.33, 1, 0.68, 1); /* crisp hover/focus */
+  /* Easing tokens, mirrored from lib/constants.ts (EASING). Three curves with
+     real contrast: a crisp micro snap, the expo-out reveal, a heavy in-out. */
+  --ease-micro: cubic-bezier(0.4, 0, 0.2, 1); /* crisp hover/focus/tap */
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1); /* the default reveal */
+  --ease-dramatic: cubic-bezier(0.76, 0, 0.24, 1); /* cinematic curtain / wipe */
 }
 
 :root {
-  --bg-primary: #0c0b0d;
-  --gold: #d4af7a;
+  --bg-primary: #0a060d;
+  --gold: #e5b874;
   /* Re-declared here (not only in @theme inline) so var() references in
      keyframes, raw CSS (.meta-label) and arbitrary utilities resolve at
      runtime — `@theme inline` inlines into generated utilities but does not
      emit the custom properties to :root. */
+  --ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-dramatic: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-micro: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-dramatic: cubic-bezier(0.76, 0, 0.24, 1);
+  --text-hero: clamp(3rem, 9vw + 1rem, 9rem);
   --text-display: clamp(2.75rem, 6vw + 1rem, 6.5rem);
-  --text-h2: clamp(2rem, 4vw + 0.5rem, 4rem);
+  --text-h2: clamp(2rem, 4vw + 0.5rem, 4.25rem);
   --text-lead: clamp(1.5rem, 2.2vw + 0.75rem, 2.5rem);
   --text-meta: clamp(0.7rem, 0.4vw + 0.6rem, 0.8rem);
-  --text-signature: clamp(2.5rem, 5vw, 4.5rem);
+  --text-signature: clamp(3rem, 6vw, 5.5rem);
   color-scheme: dark;
 }
 
@@ -64,13 +70,13 @@ body {
      flat black fill (depth without a "gradient" look). Fixed so it doesn't
      scroll. */
   background: radial-gradient(
-      120% 80% at 50% 0%,
-      #161219 0%,
-      #0c0b0d 55%,
-      #08070a 100%
+      140% 120% at 50% 10%,
+      #1c1024 0%,
+      #0e0813 40%,
+      #050207 100%
     )
     fixed;
-  color: #f5f1ea;
+  color: var(--color-cream, #fbf8f1);
   font-family: var(--font-inter), system-ui, sans-serif;
   /* `clip` (not `hidden`) prevents horizontal scroll WITHOUT forcing
      overflow-y to `auto`. `hidden` would turn <body> into its own scroll
@@ -78,10 +84,34 @@ body {
   overflow-x: clip;
 }
 
-/* Display-type discipline + readable measures. */
+/* ---------------------------------------------------------------------------
+   Type craft. Fraunces and Newsreader both carry an optical-size axis (opsz);
+   `font-optical-sizing: auto` lets the browser drive it from the font-size, so
+   big headlines get dramatic high-contrast forms and small text stays calm.
+   Ligatures + contextual alternates on for the display serif.
+   --------------------------------------------------------------------------- */
 .font-display {
-  letter-spacing: -0.02em;
+  font-optical-sizing: auto;
+  font-feature-settings: "liga" 1, "calt" 1;
+  letter-spacing: -0.025em;
 }
+.font-serif {
+  font-optical-sizing: auto;
+  font-feature-settings: "liga" 1, "calt" 1, "onum" 1;
+}
+/* A looser track for small display type (the tight default suits big sizes). */
+.tracking-display {
+  letter-spacing: -0.035em;
+}
+/* Old-style (text) figures read better in running prose and dates. */
+.nums-oldstyle {
+  font-variant-numeric: oldstyle-nums;
+}
+/* Lining, tabular figures for the big chapter numerals. */
+.nums-lining {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
 h1,
 h2,
 h3 {
@@ -92,6 +122,30 @@ p {
 }
 .measure {
   max-width: 60ch;
+}
+
+/* ---------------------------------------------------------------------------
+   Surfaces.
+   - .glass-panel survives ONLY for functional chrome (the audio button). It is
+     intentionally no longer used on content cards — blur on everything flattened
+     the real depth the 3D room creates.
+   - .card-surface is the content treatment: a 1px hairline over the dark, no
+     blur, letting the photo / type carry the weight.
+   --------------------------------------------------------------------------- */
+.glass-panel {
+  background: rgba(22, 14, 29, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(229, 184, 116, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+.card-surface {
+  border: 1px solid rgba(251, 248, 241, 0.08);
+  background: linear-gradient(
+    to bottom,
+    rgba(251, 248, 241, 0.025),
+    rgba(251, 248, 241, 0)
+  );
 }
 
 /* One consistent eyebrow / meta label across sections. */
@@ -117,8 +171,8 @@ p {
 }
 
 ::selection {
-  background: rgba(212, 175, 122, 0.3);
-  color: #f5f1ea;
+  background: rgba(229, 184, 116, 0.3);
+  color: #fbf8f1;
 }
 
 /* ---------------------------------------------------------------------------
@@ -157,28 +211,6 @@ html.lenis body {
 .paper-texture {
   background-color: var(--color-paper, #f2ebe0);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-}
-
-/* Thin downward-drawing scroll indicator line (Section 1). */
-@keyframes draw-down {
-  0% {
-    transform: scaleY(0);
-    transform-origin: top;
-  }
-  50% {
-    transform: scaleY(1);
-    transform-origin: top;
-  }
-  50.01% {
-    transform-origin: bottom;
-  }
-  100% {
-    transform: scaleY(0);
-    transform-origin: bottom;
-  }
-}
-.animate-draw-down {
-  animation: draw-down 2.4s var(--ease-smooth) infinite;
 }
 
 /* ---------------------------------------------------------------------------
@@ -225,11 +257,11 @@ body::after {
 }
 .fade-top::before {
   top: 0;
-  background: linear-gradient(to bottom, var(--bg-primary), transparent);
+  background: linear-gradient(to bottom, #0a060d, transparent);
 }
 .fade-bottom::after {
   bottom: 0;
-  background: linear-gradient(to top, var(--bg-primary), transparent);
+  background: linear-gradient(to top, #0a060d, transparent);
 }
 
 /* ---------------------------------------------------------------------------

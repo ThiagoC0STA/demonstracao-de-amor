@@ -84,7 +84,7 @@ export function CustomCursor() {
       <div
         ref={ringRef}
         aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[9998] h-8 w-8 rounded-full border border-gold/60 opacity-0 transition-[width,height,opacity,border-color] duration-300 ease-smooth data-[hover=true]:h-14 data-[hover=true]:w-14 data-[hover=true]:border-gold data-[hover=true]:bg-gold/10"
+        className="pointer-events-none fixed left-0 top-0 z-[9998] h-8 w-8 rounded-full border border-gold/40 shadow-[0_0_15px_rgba(229,184,116,0.3)] backdrop-blur-[2px] opacity-0 transition-[width,height,opacity,border-color,box-shadow] duration-300 ease-smooth data-[hover=true]:h-16 data-[hover=true]:w-16 data-[hover=true]:border-gold/80 data-[hover=true]:bg-gold/5 data-[hover=true]:shadow-[0_0_30px_rgba(229,184,116,0.6)]"
       />
     </>
   );

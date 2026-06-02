@@ -38,7 +38,6 @@ export function MediaFrame({
 
   return (
     <div className={`relative overflow-hidden bg-night-soft ${className}`}>
-      {/* placeholder (always behind; covered once media loads) */}
       <div
         aria-hidden
         className="absolute inset-0 flex items-center justify-center"
