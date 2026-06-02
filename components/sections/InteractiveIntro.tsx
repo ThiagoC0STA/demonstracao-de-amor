@@ -49,20 +49,17 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
     }));
   }, []);
 
-  // Seeded gold heart-burst.
+  // Seeded confetti of hearts that drift up the screen behind the text.
   const burst = useMemo(() => {
     const rng = mulberry32(771);
-    return Array.from({ length: 95 }, (_, i) => {
-      const a = rng() * Math.PI * 2;
-      const d = 90 + rng() * 520;
-      return {
-        id: i,
-        bx: Math.cos(a) * d,
-        by: Math.sin(a) * d,
-        bs: 0.5 + rng() * 1.2,
-        delay: rng() * 0.25,
-      };
-    });
+    return Array.from({ length: 70 }, (_, i) => ({
+      id: i,
+      x: 2 + rng() * 96, // vw across the screen
+      bs: 0.45 + rng() * 1.1, // scale
+      drift: (rng() - 0.5) * 160, // horizontal sway px
+      dur: 3 + rng() * 2.4, // rise seconds
+      delay: rng() * 1.6, // stagger
+    }));
   }, []);
 
   // intro → question: just a timer; CSS does the motion.
@@ -105,11 +102,10 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
       return;
     }
     v.currentTime = 0;
-    v.play().catch(() => {
-      // Audio autoplay blocked? Retry muted so the visual still plays.
-      v.muted = true;
-      v.play().catch(() => sealContract());
-    });
+    // The video is muted, so this autoplays freely; the ambient track is the
+    // soundtrack. If play() still fails for any reason, seal it so we never
+    // get stuck on a black screen.
+    v.play().catch(() => sealContract());
   }, [phase]);
 
   // celebrate → CSS dissolve → reveal the letter.
@@ -124,7 +120,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
         setLeaving(true); // CSS dissolve
         window.setTimeout(finish, 1100);
       },
-      reduced ? 1200 : 2400,
+      reduced ? 1200 : 3800,
     );
     return () => clearTimeout(t);
   }, [phase, reduced]);
@@ -182,6 +178,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
         src="/contract.mp4"
         preload="auto"
         playsInline
+        muted
         onEnded={sealContract}
         onError={sealContract}
         className={`absolute inset-0 z-30 h-full w-full bg-black object-cover transition-opacity duration-700 ${
@@ -303,39 +300,53 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
 
       {/* CELEBRATE */}
       {phase === "celebrate" && (
-        <>
+        <div className="absolute inset-0 z-20 flex items-center justify-center overflow-hidden">
           {!reduced && (
-            <div className="pointer-events-none absolute inset-0 z-20">
-              {burst.map((h) => (
-                <span
-                  key={h.id}
-                  className="gate-burst absolute left-1/2 top-1/2 text-gold-bright"
-                  style={cssVars({
-                    marginLeft: -12,
-                    marginTop: -12,
-                    "--bx": `${h.bx}px`,
-                    "--by": `${h.by}px`,
-                    "--bs": `${h.bs}`,
-                    "--d": `${h.delay}s`,
-                  })}
-                >
-                  <HeartSvg />
-                </span>
-              ))}
-            </div>
+            <>
+              {/* light shockwaves radiating out */}
+              <span className="pulse-flash absolute left-1/2 top-1/2 -ml-[40vmax] -mt-[40vmax] h-[80vmax] w-[80vmax] rounded-full bg-[radial-gradient(circle,rgba(255,226,170,0.4),transparent_60%)]" />
+              <span
+                className="pulse-flash absolute left-1/2 top-1/2 -ml-[40vmax] -mt-[40vmax] h-[80vmax] w-[80vmax] rounded-full bg-[radial-gradient(circle,rgba(158,43,63,0.32),transparent_60%)]"
+                style={cssVars({ "--d": "0.55s" })}
+              />
+              {/* hearts drifting up like confetti, behind the text */}
+              <div className="pointer-events-none absolute inset-0">
+                {burst.map((h) => (
+                  <span
+                    key={h.id}
+                    className="heart-rise absolute bottom-0 text-gold-bright"
+                    style={cssVars({
+                      left: `${h.x}vw`,
+                      "--bs": `${h.bs}`,
+                      "--drift": `${h.drift}px`,
+                      "--dur": `${h.dur}s`,
+                      "--d": `${h.delay}s`,
+                    })}
+                  >
+                    <HeartSvg />
+                  </span>
+                ))}
+              </div>
+            </>
           )}
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 text-center">
-            <h1 className="rise-in font-display text-5xl italic tracking-display text-gold-bright sm:text-7xl">
+
+          <div className="relative z-10 flex flex-col items-center gap-5 px-6 text-center">
+            {/* scrim so the rising hearts never sit on the words */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[55vh] w-[130vw] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(5,3,8,0.72),transparent_66%)]"
+            />
+            <h1 className="rise-in font-display text-6xl italic leading-[1.05] tracking-display text-gold-bright [text-shadow:0_0_45px_rgba(229,184,116,0.45)] sm:text-8xl">
               {CONTENT.gate.celebration}
             </h1>
             <p
-              className="rise-in font-display text-lg italic text-cream/70 sm:text-xl"
-              style={cssVars({ "--d": "0.2s" })}
+              className="rise-in font-display text-lg italic text-cream/75 sm:text-2xl"
+              style={cssVars({ "--d": "0.3s" })}
             >
               {CONTENT.gate.celebrationSub}
             </p>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

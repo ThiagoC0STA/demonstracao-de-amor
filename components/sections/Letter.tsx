@@ -28,7 +28,7 @@ export function Letter() {
             data-reveal
             className="mb-10 block text-center text-[0.7rem] uppercase tracking-[0.3em] text-gold/70"
           >
-            Curitiba · para você
+            para você
           </span>
 
           <div

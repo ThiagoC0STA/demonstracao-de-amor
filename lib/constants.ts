@@ -111,7 +111,7 @@ export const CONTENT = {
       "parece bom demais pra ser verdade",
       "então, antes da carta...",
     ],
-    question: "quer ser minha pra sempre?",
+    question: "Quer ser minha pra sempre?",
     yes: "sim, pra sempre",
     no: "deixa eu pensar...",
     celebration: "meu coração explodiu",
@@ -125,8 +125,8 @@ export const CONTENT = {
 
   /** Section 2 — typewriter opening lines. Keep each line short and poetic. */
   opening: [
-    "Eu não sei explicar o acaso que te colocou no meu caminho.",
-    "Só sei que desde então tudo ficou um pouco mais inteiro.",
+    "Tudo começou com um simples oi, sem aviso nenhum.",
+    "E desde então tudo ficou mais inteiro, momoi.",
   ],
 
   /** Cosmic interlude — the signature full-bleed beat ("flutuando com você"). */
@@ -143,33 +143,47 @@ export const CONTENT = {
   /** Section 3 — horizontal pinned timeline. 5 cards. */
   timeline: [
     {
-      date: "O começo",
-      title: "Quando te vi",
-      description: "Um instante que dividiu o tempo em antes e depois.",
-      media: { type: "image", src: "/us/191855eb-2d8b-4675-adfb-a3bc1723aebd.jpg" },
+      date: "o começo",
+      title: "um oi que mudou tudo",
+      description:
+        "Começou com um simples oi. Quem diria que ali nascia a coisa mais importante da minha vida.",
+      media: {
+        type: "image",
+        src: "/us/191855eb-2d8b-4675-adfb-a3bc1723aebd.jpg",
+      },
     },
     {
-      date: "Os primeiros dias",
-      title: "A descoberta",
-      description: "Cada conversa virava motivo pra querer a próxima.",
-      media: { type: "image", src: "/us/456e0508-aaba-45a0-8f4f-51601d2d3b0b.jpg" },
+      date: "o primeiro encontro",
+      title: "o café mais horrível do mundo",
+      description:
+        "O café era intragável e a gente não parou de rir. Naquele mesmo dia, no god, eu te disse que te amava. E era verdade.",
+      media: {
+        type: "image",
+        src: "/us/456e0508-aaba-45a0-8f4f-51601d2d3b0b.jpg",
+      },
     },
     {
-      date: "No meio do caminho",
-      title: "A certeza",
-      description: "Percebi que casa não era um lugar, era você.",
+      date: "virou nós",
+      title: "momoi",
+      description:
+        "Do nada a gente tinha um nome só nosso, um bar só nosso, um jeito de existir que ninguém de fora entende.",
       media: { type: "image", src: "/us/IMG_4239.jpg" },
     },
     {
-      date: "Quando apertou",
-      title: "Juntos",
-      description: "A gente aprendeu que o difícil cabe quando é a dois.",
-      media: { type: "image", src: "/us/72FB4F53-438F-4874-9B51-47A31B54748E.jpg" },
+      date: "construindo",
+      title: "a casa, a Alice, a vida",
+      description:
+        "Te ver conquistar a sua casa e te ver com a Alice me mostrou exatamente a vida que eu quero ter pra sempre.",
+      media: {
+        type: "image",
+        src: "/us/72FB4F53-438F-4874-9B51-47A31B54748E.jpg",
+      },
     },
     {
-      date: "Agora",
-      title: "Aqui",
-      description: "E eu escolheria tudo de novo, sem pensar duas vezes.",
+      date: "agora",
+      title: "aqui, com você",
+      description:
+        "E eu escolheria tudo de novo. O café ruim, o caminho inteiro, você. Sem pensar duas vezes.",
       media: { type: "image", src: "/us/IMG_4357.jpg" },
     },
   ] satisfies TimelineCard[],
@@ -177,53 +191,68 @@ export const CONTENT = {
   /** Section 4 — "what I love about you" grid. 6 cards. */
   qualities: [
     {
-      title: "Seu jeito de rir",
-      description: "Que desarma qualquer dia ruim em dois segundos.",
-      media: { type: "image", src: "/us/c3722f14-67f2-451a-8721-73486eb889a4.jpg" },
+      title: "Seu olhar de louca",
+      description:
+        "Aquele olhar que é só meu. Me desarma e me faz rir na mesma fração de segundo.",
+      media: {
+        type: "image",
+        src: "/us/c3722f14-67f2-451a-8721-73486eb889a4.jpg",
+      },
     },
     {
-      title: "Sua teimosia boa",
-      description: "De não desistir das pessoas que você ama.",
+      title: "Seu carinho",
+      description:
+        "Você é carinhosa de um jeito que transborda. Comigo, com a Alice, com tudo que você ama.",
       media: { type: "image", src: "/us/IMG_4555.PNG" },
     },
     {
-      title: "Seu olhar",
-      description: "Que entende o que eu não consigo colocar em palavras.",
+      title: "Seu jeito de rir",
+      description:
+        "Que transformou até um café horrível no melhor primeiro dia da minha vida.",
       media: { type: "image", src: "/us/IMG_4554.PNG" },
     },
     {
       title: "Sua coragem",
-      description: "De ser inteira mesmo quando seria mais fácil se esconder.",
+      description:
+        "De construir, de recomeçar, de ser mãe e mulher inteira ao mesmo tempo.",
       media: { type: "image", src: "/us/IMG_4024.PNG" },
     },
     {
-      title: "Seu cuidado",
-      description: "Nos detalhes pequenos que ninguém mais repara.",
+      title: "Sua teimosia boa",
+      description:
+        "De não desistir das pessoas que você ama. Eu tenho muita sorte de ser uma delas.",
       media: { type: "image", src: "/us/IMG_4443.jpg" },
     },
     {
       title: "Sua presença",
-      description: "Que faz silêncio parecer companhia, não solidão.",
-      media: { type: "image", src: "/us/AC4DD06E-773F-45B2-B5EB-66F7B5C2915E.gif" },
+      description:
+        "Que faz qualquer lugar virar lar. Com você até o silêncio é companhia.",
+      media: {
+        type: "image",
+        src: "/us/AC4DD06E-773F-45B2-B5EB-66F7B5C2915E.gif",
+      },
     },
   ] satisfies LoveQuality[],
 
   /** Section 5 — phrases that fade in/out over the 3D memory scene. */
   memoryPhrases: [
-    "cada momento com você virou lembrança que eu guardo",
-    "e as melhores ainda nem aconteceram",
+    "cada momento com você virou lembrança que eu guardo com cuidado",
+    "e as melhores ainda nem aconteceram, momoi",
   ],
 
   /** Section 6 — the letter. Paragraphs reveal one by one on scroll. */
   letter: {
     paragraphs: [
-      "Lilian, eu comecei essa carta sem saber por onde começar, porque tudo que eu sinto por você não cabe direito em palavra nenhuma.",
-      "Você chegou de um jeito silencioso e foi ocupando tudo. Hoje não existe um plano meu que não tenha você no meio dele.",
-      "Obrigado por ser paciente com os meus dias difíceis, por rir das minhas bobagens e por me fazer querer ser uma pessoa melhor sem nunca me cobrar isso.",
-      "Eu não preciso de um motivo grande pra te amar. Eu te amo no café da manhã, no trânsito, no cansaço, no comum. Te amo no que a vida tem de mais simples.",
+      "moi, eu já comecei essa carta umas mil vezes. Toda vez eu apago, porque nenhuma palavra parece grande o bastante pra caber tudo que eu sinto por você. Mas hoje eu decidi tentar mesmo assim, porque você merece ouvir.",
+      "Tudo começou com um simples oi, sem a gente fazer ideia do que tava nascendo ali. No nosso primeiro encontro o café era horrível, e mesmo assim eu não parei de rir. Naquele mesmo dia, no god, eu te disse que te amava. Não foi pressa nem impulso: eu só já sabia. Era você. Sempre foi você.",
+      "Eu amo o seu olhar de louca, aquele que é só meu, que me desarma e me faz rir na mesma fração de segundo. Amo o seu carinho, que transborda em tudo e em todo mundo que você ama. Você ama de um jeito tão inteiro que me ensinou um amor que eu nem sabia que existia.",
+      "Te ver, e te ver com a Alice, é a coisa mais bonita que eu conheço. Vocês duas são o meu lugar no mundo. É olhando pra vocês que eu finalmente entendi o que a palavra lar quer dizer.",
+      "Você me ensinou as duas coisas mais importantes da minha vida: que eu posso ser uma pessoa melhor, e que eu sou amado do jeito que eu sou. Eu cheguei meio quebrado e, sem fazer força nenhuma, você foi me inteirando.",
+      "Então deixa eu te prometer, com todas as letras: eu quero uma vida próspera ao seu lado. Uma casa linda que seja só nossa, os nossos filhos correndo por ela, e eu, todo santo dia, escolhendo você de novo. No café ruim e no café bom, no comum e no extraordinário.",
+      "Pra sempre ainda me parece pouco perto do tamanho disso que eu sinto. Mas é por aí que eu quero começar. Eu te amo, moi. Hoje, amanhã, e em todas as versões de mim que ainda vão existir.",
     ],
     /** Shown in the signature font (Caveat), gold. */
-    signature: "— seu, pra sempre",
+    signature: "— seu momoi, pra sempre",
   },
 
   ending: {
@@ -233,7 +262,7 @@ export const CONTENT = {
 
   /** Hidden message revealed by the Konami code easter egg. */
   konamiMessage:
-    "você encontrou meu segredo. eu te amaria em qualquer ordem de botões.",
+    "rusbé. eu sabia que você ia achar isso, momoi. te amo até nas piadas mais sem noção que só são nossas.",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -242,7 +271,7 @@ export const CONTENT = {
 
 export const ASSETS = {
   /** Ambient soundtrack. Replace the file at this path to change the track. */
-  audio: "/audio/ambient.mp3",
+  audio: "/audio.mp3",
   /**
    * Photos for the memory polyhedron. 6 unique images repeated on opposite
    * faces of the dodecahedron. Until you add real files, gradient placeholders

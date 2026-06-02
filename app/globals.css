@@ -398,6 +398,49 @@ body::after {
   animation-delay: var(--d, 0s);
 }
 
+/* Celebration — a light shockwave that radiates out and fades. */
+@keyframes pulse-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  25% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+.pulse-flash {
+  opacity: 0;
+  animation: pulse-flash 1.9s var(--ease-smooth) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+/* Celebration — hearts drift up like confetti (per-heart vars set inline). */
+@keyframes heart-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(var(--bs, 1));
+  }
+  12% {
+    opacity: 1;
+  }
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift, 0), -112vh) scale(var(--bs, 1));
+  }
+}
+.heart-rise {
+  opacity: 0;
+  animation: heart-rise var(--dur, 4s) linear forwards;
+  animation-delay: var(--d, 0s);
+}
+
 /* Simple fade + rise in (question heading, buttons, celebration). */
 @keyframes rise-in {
   from {

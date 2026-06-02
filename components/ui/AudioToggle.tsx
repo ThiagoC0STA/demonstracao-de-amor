@@ -3,26 +3,27 @@
 import { Howl } from "howler";
 import { useEffect, useRef, useState } from "react";
 import { ASSETS } from "@/lib/constants";
-import { useLenis } from "@/hooks/useLenis";
 
 /**
  * Persistent ambient-audio control, bottom-right.
  *
- * - Starts paused/muted (autoplay policies forbid sound before interaction).
- * - Fades in (becomes visible) only after the first scroll, so it doesn't
- *   compete with the preloader/hero.
- * - Play  -> howler fade 0 -> 0.4 over 2s.
- *   Pause -> howler fade 0.4 -> 0 over 1s, then halt.
- * - If the audio file is missing the button still renders; it just stays
- *   silent (onloaderror is swallowed intentionally).
+ * Browsers forbid sound before a user gesture, so we can't truly autoplay on
+ * load. Instead we start the track (fading in) on the very first interaction
+ * anywhere on the page — which, in this experience, is her clicking
+ * "sim, pra sempre" on the gate. From then on the button just toggles
+ * play/pause. The control reveals once the audio is live.
+ *
+ * Uses Web Audio (Howler default) rather than html5 streaming: more reliable
+ * playback + fades, and Howler auto-unlocks the audio context on first gesture.
  */
 const TARGET_VOLUME = 0.4;
+const FADE_IN = 1500;
+const FADE_OUT = 800;
 
 export function AudioToggle() {
   const howlRef = useRef<Howl | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const lenis = useLenis();
+  const [ready, setReady] = useState(false);
 
   // Build the Howl once.
   useEffect(() => {
@@ -30,7 +31,11 @@ export function AudioToggle() {
       src: [ASSETS.audio],
       loop: true,
       volume: 0,
-      html5: true, // stream rather than fully decode — lighter on first paint
+      preload: true,
+    });
+    // If the first play() is blocked, retry the moment the context unlocks.
+    howl.on("playerror", () => {
+      howl.once("unlock", () => howl.play());
     });
     howlRef.current = howl;
     return () => {
@@ -39,38 +44,39 @@ export function AudioToggle() {
     };
   }, []);
 
-  // Reveal after the first meaningful scroll (Lenis if present, else native).
-  useEffect(() => {
-    const reveal = (y: number) => {
-      if (y > 80) setVisible(true);
-    };
-
-    if (lenis) {
-      const handler = ({ scroll }: { scroll: number }) => reveal(scroll);
-      lenis.on("scroll", handler);
-      return () => lenis.off("scroll", handler);
-    }
-
-    const onScroll = () => reveal(window.scrollY);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [lenis]);
-
-  const toggle = () => {
+  const start = () => {
     const howl = howlRef.current;
     if (!howl) return;
-
-    if (playing) {
-      howl.fade(TARGET_VOLUME, 0, 1000);
-      // Stop after the fade so we don't keep an inaudible loop running.
-      window.setTimeout(() => howl.pause(), 1000);
-      setPlaying(false);
-    } else {
-      if (!howl.playing()) howl.play();
-      howl.fade(0, TARGET_VOLUME, 2000);
-      setPlaying(true);
-    }
+    if (!howl.playing()) howl.play();
+    howl.fade(howl.volume(), TARGET_VOLUME, FADE_IN);
+    setPlaying(true);
+    setReady(true);
   };
+
+  const stop = () => {
+    const howl = howlRef.current;
+    if (!howl) return;
+    howl.fade(howl.volume(), 0, FADE_OUT);
+    window.setTimeout(() => howl.pause(), FADE_OUT);
+    setPlaying(false);
+  };
+
+  const toggle = () => (playing ? stop() : start());
+
+  // Kick the soundtrack off on the first user gesture anywhere on the page.
+  useEffect(() => {
+    const onFirstGesture = () => {
+      start();
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
+    window.addEventListener("pointerdown", onFirstGesture);
+    window.addEventListener("keydown", onFirstGesture);
+    return () => {
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
+  }, []);
 
   return (
     <button
@@ -80,7 +86,7 @@ export function AudioToggle() {
       aria-pressed={playing}
       data-cursor
       className={`fixed bottom-6 right-6 z-[200] flex h-12 w-12 items-center justify-center rounded-full glass-panel text-gold transition-all duration-700 ease-[var(--ease-smooth)] hover:scale-110 hover:shadow-[0_0_25px_rgba(229,184,116,0.5)] ${
-        visible ? "opacity-80 hover:opacity-100" : "pointer-events-none opacity-0"
+        ready ? "opacity-80 hover:opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
       {playing ? <SoundOnIcon /> : <SoundOffIcon />}
