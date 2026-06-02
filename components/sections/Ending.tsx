@@ -1,115 +1,74 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CONTENT } from "@/lib/constants";
-import { HeartParticles } from "@/components/three/HeartParticles";
-import { ParticleField } from "@/components/three/ParticleField";
 import { useScrollTo } from "@/hooks/useLenis";
 import { useMagnetic } from "@/hooks/useMagnetic";
-import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
+import { useReveal } from "@/hooks/useReveal";
 
 /**
- * Section 7 — Ending (the signature moment). A cloud of gold dust gathers into a
- * glowing heart the moment the section comes into view — and since the section
- * is transparent, it forms among the persistent starfield. The final line rises
- * from behind a mask (CSS), then a magnetic "voltar ao início" fades in. Pure
- * CSS/JS — no animation library.
+ * Section 7 — Ending. Over the persistent starfield, a glowing heart outline
+ * draws itself, the final line rises from behind a mask, then a magnetic
+ * "voltar ao início" fades in. Pure CSS/SVG — no WebGL.
  */
 export function Ending() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [active, setActive] = useState(false);
-  const [showBack, setShowBack] = useState(false);
+  const ref = useReveal<HTMLElement>();
   const scrollTo = useScrollTo();
-  const reduced = useReducedMotionPref();
   const backRef = useMagnetic<HTMLButtonElement>(0.5);
-
-  const particleCount = useMemo(
-    () =>
-      typeof window !== "undefined" && window.innerWidth < 640 ? 850 : 1600,
-    [],
-  );
+  const [showBack, setShowBack] = useState(false);
 
   useEffect(() => {
-    const el = sectionRef.current;
+    const el = ref.current;
     if (!el) return;
     let timer: ReturnType<typeof setTimeout>;
-    const observer = new IntersectionObserver(
+    const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setActive(true);
-          el.querySelector(".end-mask")?.classList.add("is-in");
-          timer = setTimeout(() => setShowBack(true), 3400);
+          timer = setTimeout(() => setShowBack(true), 2800);
         } else {
           clearTimeout(timer);
         }
       },
-      { threshold: 0.4 },
+      { threshold: 0.5 },
     );
-    observer.observe(el);
+    io.observe(el);
     return () => {
-      observer.disconnect();
+      io.disconnect();
       clearTimeout(timer);
     };
-  }, []);
+  }, [ref]);
 
   return (
     <section
-      ref={sectionRef}
-      className="relative flex h-svh w-full flex-col items-center justify-center overflow-hidden"
+      ref={ref}
+      className="relative flex h-svh w-full flex-col items-center justify-center gap-10 overflow-hidden px-6 text-center"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_60%,rgba(158,43,63,0.16),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_55%,rgba(158,43,63,0.18),transparent_60%)]" />
 
-      <Canvas
-        className="absolute inset-0"
-        camera={{ position: [0, 0, 8], fov: 45 }}
-        dpr={[1, 1.5]}
-        gl={{ alpha: true, antialias: true }}
-        frameloop={reduced ? "demand" : "always"}
+      <svg
+        data-io
+        className="heart-draw relative z-10 h-24 w-24 text-gold-bright sm:h-28 sm:w-28"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden
       >
-        <ambientLight intensity={0.3} />
-        <pointLight position={[0, 0, 5]} intensity={14} color="#ffe2aa" />
-        <Suspense fallback={null}>
-          <HeartParticles
-            count={particleCount}
-            active={active || reduced}
-            reduced={reduced}
-          />
-          <group position={[0, 0, -2.5]}>
-            <ParticleField
-              count={reduced ? 120 : 220}
-              size={16}
-              pointSize={16}
-              opacity={0.4}
-              rise
-              reduced={reduced}
-            />
-          </group>
-        </Suspense>
-        <EffectComposer multisampling={4}>
-          <Bloom
-            intensity={0.9}
-            luminanceThreshold={0.5}
-            luminanceSmoothing={0.4}
-            mipmapBlur
-          />
-        </EffectComposer>
-      </Canvas>
+        <path
+          d="M12 21s-7-4.6-9.5-9C1 9 2.6 6 5.7 6 8 6 9.6 7.6 12 10c2.4-2.4 4-4 6.3-4C21.4 6 23 9 21.5 12 19 16.4 12 21 12 21Z"
+          stroke="currentColor"
+          strokeWidth="1.1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
 
-      <div className="pointer-events-none relative z-10 flex flex-col items-center px-6 text-center">
-        <span
-          data-reveal-mask
-          className="end-mask block pb-[0.12em]"
-        >
-          <h2 className="font-display text-[length:var(--text-display)] italic leading-[1.04] tracking-display text-cream">
-            {CONTENT.ending.title}
-          </h2>
-        </span>
-      </div>
+      <span data-reveal-mask className="end-mask relative z-10 block pb-[0.12em]">
+        <h2 className="font-display text-[length:var(--text-display)] italic leading-[1.04] tracking-display text-cream">
+          {CONTENT.ending.title}
+        </h2>
+      </span>
 
       {showBack && (
-        <div className="rise-in absolute bottom-16 z-10">
+        <div className="rise-in relative z-10">
           <button
             ref={backRef}
             type="button"

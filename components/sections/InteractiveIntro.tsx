@@ -16,7 +16,7 @@ import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvid
  * and a "Yes" that reveals the journey. Every motion is a CSS keyframe /
  * transition driven by `animation-delay`; React only flips the phase.
  */
-type Phase = "intro" | "question" | "celebrate";
+type Phase = "intro" | "question" | "contract" | "celebrate";
 
 const NAME_IN = 1.9; // s — name converges + settles
 const NAME_HOLD = 1.0; // s — name holds before fading out
@@ -31,8 +31,11 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const noRef = useRef<HTMLButtonElement>(null);
   const noPos = useRef({ x: 0, y: 0 });
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const signedRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>("intro");
+  const [signed, setSigned] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [hidden, setHidden] = useState(false);
 
@@ -49,9 +52,9 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   // Seeded gold heart-burst.
   const burst = useMemo(() => {
     const rng = mulberry32(771);
-    return Array.from({ length: 32 }, (_, i) => {
+    return Array.from({ length: 95 }, (_, i) => {
       const a = rng() * Math.PI * 2;
-      const d = 150 + rng() * 420;
+      const d = 90 + rng() * 520;
       return {
         id: i,
         bx: Math.cos(a) * d,
@@ -77,9 +80,42 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
     onComplete();
   };
 
+  // "sim, pra sempre" → play the love-contract video. Reduced motion skips
+  // straight to the celebration beat (no autoplaying video).
   const handleYes = () => {
-    setPhase("celebrate");
-    window.setTimeout(
+    setPhase(reduced ? "celebrate" : "contract");
+  };
+
+  // Stamp the contract, hold the success message, then move on to celebrate.
+  // Guarded so the video's onEnded and the "pular" button can't double-fire it.
+  const sealContract = () => {
+    if (signedRef.current) return;
+    signedRef.current = true;
+    setSigned(true);
+    window.setTimeout(() => setPhase("celebrate"), 2400);
+  };
+
+  // Entering the contract phase: play the video (the click is the gesture that
+  // unlocks autoplay). If it can't play, seal it anyway so we never get stuck.
+  useEffect(() => {
+    if (phase !== "contract") return;
+    const v = videoRef.current;
+    if (!v) {
+      sealContract();
+      return;
+    }
+    v.currentTime = 0;
+    v.play().catch(() => {
+      // Audio autoplay blocked? Retry muted so the visual still plays.
+      v.muted = true;
+      v.play().catch(() => sealContract());
+    });
+  }, [phase]);
+
+  // celebrate → CSS dissolve → reveal the letter.
+  useEffect(() => {
+    if (phase !== "celebrate") return;
+    const t = window.setTimeout(
       () => {
         if (reduced) {
           finish();
@@ -90,7 +126,8 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
       },
       reduced ? 1200 : 2400,
     );
-  };
+    return () => clearTimeout(t);
+  }, [phase, reduced]);
 
   // The "No" flees away from the pointer (CSS transition smooths the jump).
   const dodge = (e?: { clientX: number; clientY: number }) => {
@@ -137,6 +174,42 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
       {/* shooting star + warm bloom */}
       <span className="shoot pointer-events-none absolute left-0 top-0 h-px w-40 -rotate-[28deg] bg-gradient-to-r from-transparent via-gold-bright to-transparent" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_55%,rgba(158,43,63,0.14),transparent_62%)]" />
+
+      {/* CONTRACT — the love-contract video, mounted early to preload, revealed
+          full-screen once she says "sim, pra sempre". */}
+      <video
+        ref={videoRef}
+        src="/contract.mp4"
+        preload="auto"
+        playsInline
+        onEnded={sealContract}
+        onError={sealContract}
+        className={`absolute inset-0 z-30 h-full w-full bg-black object-cover transition-opacity duration-700 ${
+          phase === "contract" ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
+      {phase === "contract" && (
+        <>
+          {!signed && (
+            <button
+              type="button"
+              data-cursor
+              onClick={sealContract}
+              className="absolute bottom-6 right-6 z-40 rounded-md border border-cream/25 px-4 py-2 font-sans text-xs text-cream/60 transition-colors duration-200 hover:border-cream/45 hover:text-cream/90"
+            >
+              pular
+            </button>
+          )}
+          {signed && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-night/55 px-6 text-center backdrop-blur-sm">
+              <h1 className="rise-in max-w-[18ch] font-display text-4xl italic leading-tight tracking-display text-gold-bright sm:text-6xl">
+                {CONTENT.gate.contractSuccess}
+              </h1>
+            </div>
+          )}
+        </>
+      )}
 
       {/* INTRO */}
       {phase === "intro" && (
@@ -203,7 +276,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
               type="button"
               data-cursor
               onClick={handleYes}
-              className="rise-in rounded-md bg-gold px-8 py-3 font-sans text-base font-medium text-night transition-colors duration-200 hover:bg-gold-bright"
+              className="fade-in rounded-md bg-gold px-8 py-3 font-sans text-base font-medium text-night transition-colors duration-200 hover:bg-gold-bright"
               style={cssVars({ "--d": "0.15s" })}
             >
               {CONTENT.gate.yes}
@@ -219,7 +292,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                 e.preventDefault();
                 dodge(e);
               }}
-              className="rise-in rounded-md border border-cream/25 px-6 py-3 font-sans text-sm text-cream/65 transition-[transform,border-color] duration-300 ease-[var(--ease-micro)] hover:border-cream/40"
+              className="fade-in rounded-md border border-cream/25 px-6 py-3 font-sans text-sm text-cream/65 transition-[transform,border-color] duration-300 ease-[var(--ease-micro)] hover:border-cream/40"
               style={cssVars({ "--d": "0.25s" })}
             >
               {CONTENT.gate.no}

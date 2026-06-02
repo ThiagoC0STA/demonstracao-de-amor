@@ -415,6 +415,22 @@ body::after {
   animation-delay: var(--d, 0s);
 }
 
+/* Fade in, opacity only — leaves `transform` free (used on the gate buttons so
+   the dodging "No" can be moved via inline transform). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  opacity: 0;
+  animation: fade-in 0.7s var(--ease-smooth) forwards;
+  animation-delay: var(--d, 0s);
+}
+
 /* Gate dissolve (push-in) — toggled by adding `.gate-leaving`. */
 .gate-leaving {
   opacity: 0;
@@ -476,6 +492,37 @@ body::after {
   animation: ken-burns 14s ease-in-out infinite alternate;
 }
 
+/* Memory gallery — photos bob gently like they're floating in the sky. */
+@keyframes float {
+  from {
+    transform: translateY(-7px);
+  }
+  to {
+    transform: translateY(7px);
+  }
+}
+.float {
+  animation: float 6s ease-in-out infinite alternate;
+  animation-delay: var(--d, 0s);
+}
+
+/* Ending — the heart outline draws itself, glowing (on `.is-in`). */
+.heart-draw {
+  filter: drop-shadow(0 0 14px rgba(229, 184, 116, 0.55));
+}
+.heart-draw path {
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+}
+.heart-draw.is-in path {
+  animation: heart-draw 2.2s var(--ease-smooth) forwards;
+}
+@keyframes heart-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 /* Letter — signature writes itself, then the flourish draws (on `.is-in`). */
 @keyframes sign-wipe {
   from {
@@ -510,28 +557,7 @@ body::after {
   will-change: transform;
 }
 
-/* ---------------------------------------------------------------------------
-   Reduced-motion fallback. Neutralises every hand-made animation and shows the
-   content in its resting (visible) state.
-   --------------------------------------------------------------------------- */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  [data-reveal],
-  [data-reveal-mask] > * {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .sign-wipe {
-    clip-path: none !important;
-  }
-  .flourish path {
-    stroke-dashoffset: 0 !important;
-  }
-}
+/* Note: we intentionally do NOT add a `prefers-reduced-motion` suppression
+   block. This is an animation-first artistic piece and the owner wants the
+   motion to play; honouring the OS "reduce motion" setting was silently killing
+   every animation here (see ReducedMotionProvider). */

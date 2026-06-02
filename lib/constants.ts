@@ -114,8 +114,9 @@ export const CONTENT = {
     question: "quer ser minha pra sempre?",
     yes: "sim, pra sempre",
     no: "deixa eu pensar...",
-    celebration: "eu já sabia.",
+    celebration: "meu coração explodiu",
     celebrationSub: "deixa eu te mostrar uma coisa...",
+    contractSuccess: "contrato assinado com sucesso!",
   },
 
   hero: {

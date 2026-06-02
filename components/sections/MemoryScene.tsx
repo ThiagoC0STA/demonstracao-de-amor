@@ -1,97 +1,70 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import { Suspense, useEffect, useRef, useState } from "react";
-import { CONTENT } from "@/lib/constants";
-import { MemoryPolyhedron } from "@/components/three/MemoryPolyhedron";
-import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
+import { type CSSProperties } from "react";
+import { ASSETS, CONTENT } from "@/lib/constants";
+import { MediaFrame } from "@/components/ui/MediaFrame";
+import { useReveal } from "@/hooks/useReveal";
 
 /**
- * Section 5 — 3D Memory Scene. A tall, sticky section whose scroll position
- * (read by a tiny vanilla handler, no animation library) drives the camera
- * around the photo sphere and switches the caption. Reduced motion collapses it
- * to a single static frame with the first caption.
+ * Section 5 — Memórias. A constellation of photos floating in the sky (pure 2D,
+ * no WebGL). Each photo reveals on scroll and bobs gently on its own rhythm;
+ * the two phrases bookend the gallery. Transparent over the <Starfield>.
  */
 export function MemoryScene() {
-  const reduced = useReducedMotionPref();
-  const sectionRef = useRef<HTMLElement>(null);
-  const progress = useRef(0);
-  const [phrase, setPhrase] = useState(0);
-
-  useEffect(() => {
-    if (reduced) return;
-    const section = sectionRef.current;
-    if (!section) return;
-    const count = CONTENT.memoryPhrases.length;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const r = section.getBoundingClientRect();
-      const total = r.height - window.innerHeight;
-      const p = total > 0 ? Math.max(0, Math.min(1, -r.top / total)) : 0;
-      progress.current = p;
-      const idx = Math.min(count - 1, Math.floor(p * count));
-      setPhrase((prev) => (prev === idx ? prev : idx));
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, [reduced]);
+  const ref = useReveal<HTMLElement>();
+  const photos = ASSETS.memoryPhotos;
+  const [first, second] = CONTENT.memoryPhrases;
 
   return (
-    <section
-      ref={sectionRef}
-      className={reduced ? "relative h-svh w-full" : "relative h-[220svh] w-full"}
-    >
-      <div className="vignette sticky top-0 h-svh w-full overflow-hidden bg-night">
-        <Canvas
-          camera={{ position: [0, 0, 6.2], fov: 45 }}
-          dpr={[1, 1.5]}
-          gl={{ antialias: true }}
-          frameloop={reduced ? "demand" : "always"}
+    <section ref={ref} className="section-pad relative px-6">
+      <div className="mx-auto max-w-3xl text-center">
+        <span data-reveal className="meta-label inline-flex items-center gap-3">
+          <span className="h-px w-10 bg-gold/50" />
+          nossas lembranças
+          <span className="h-px w-10 bg-gold/50" />
+        </span>
+        <p
+          data-reveal
+          style={{ "--reveal-delay": "0.1s" } as CSSProperties}
+          className="mt-6 font-display text-[length:var(--text-h2)] font-medium leading-[1.1] tracking-display text-cream"
         >
-          <color attach="background" args={["#0c0b0d"]} />
-          <ambientLight intensity={0.2} />
-          <directionalLight position={[6, 6, 4]} intensity={2.4} color="#ffe2aa" />
-          <directionalLight
-            position={[-6, -4, 2]}
-            intensity={0.9}
-            color="#5a3a44"
-          />
-          <directionalLight position={[0, 2, -6]} intensity={1.2} color="#ffffff" />
-
-          <Suspense fallback={null}>
-            <MemoryPolyhedron reduced={reduced} progress={progress} />
-          </Suspense>
-
-          <EffectComposer multisampling={4}>
-            <Bloom
-              intensity={0.7}
-              luminanceThreshold={0.55}
-              luminanceSmoothing={0.3}
-              mipmapBlur
-            />
-          </EffectComposer>
-        </Canvas>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-[14%] z-[3] flex justify-center px-6">
-          <p
-            key={phrase}
-            className="rise-in max-w-[40ch] text-center font-display text-2xl italic leading-tight text-cream/90 sm:text-3xl"
-          >
-            {CONTENT.memoryPhrases[phrase]}
-          </p>
-        </div>
+          {first}
+        </p>
       </div>
+
+      <div className="mx-auto mt-20 grid max-w-5xl grid-cols-2 gap-5 md:mt-28 md:grid-cols-3 md:gap-8">
+        {photos.map((src, i) => (
+          <div
+            key={src}
+            data-reveal
+            style={
+              {
+                "--reveal-delay": `${(i % 3) * 0.1}s`,
+                marginTop: `${(i % 3) * 28}px`,
+              } as CSSProperties
+            }
+          >
+            <div className="float" style={{ "--d": `${i * 0.5}s` } as CSSProperties}>
+              <div className="card-surface relative aspect-[4/5] w-full overflow-hidden rounded-md">
+                <MediaFrame
+                  media={{ type: "image", src }}
+                  seed={i + 30}
+                  alt="uma lembrança nossa"
+                  hint="lembrança"
+                  className="h-full w-full"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p
+        data-reveal
+        className="mx-auto mt-20 max-w-2xl text-center font-display text-2xl italic leading-tight text-gold-bright sm:text-3xl"
+      >
+        {second}
+      </p>
     </section>
   );
 }

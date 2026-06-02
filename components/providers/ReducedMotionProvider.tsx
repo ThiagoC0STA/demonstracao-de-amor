@@ -1,11 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 
 /**
- * Reads the user's `prefers-reduced-motion` setting once and shares it through
- * context so every component can swap to a fade-only experience with a single
- * boolean. Live-updates if the OS setting changes mid-session.
+ * This site is an animation-first artistic piece and the owner wants the motion
+ * to play. The OS `prefers-reduced-motion` setting (on by default whenever
+ * Windows/macOS animations are turned off) was silently disabling every
+ * animation — making the whole thing look static and "broken". So we
+ * intentionally do NOT gate on it: `useReducedMotionPref` always returns
+ * `false`. The provider stays as a passthrough so the layout/tree is unchanged.
  */
 const ReducedMotionContext = createContext(false);
 
@@ -18,18 +21,8 @@ export function ReducedMotionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
   return (
-    <ReducedMotionContext.Provider value={reduced}>
+    <ReducedMotionContext.Provider value={false}>
       {children}
     </ReducedMotionContext.Provider>
   );

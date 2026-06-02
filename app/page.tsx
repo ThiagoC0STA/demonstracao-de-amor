@@ -1,32 +1,19 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { InteractiveIntro } from "@/components/sections/InteractiveIntro";
 import { Opening } from "@/components/sections/Opening";
 import { Timeline } from "@/components/sections/Timeline";
 import { CosmicInterlude } from "@/components/sections/CosmicInterlude";
 import { WhatILove } from "@/components/sections/WhatILove";
+import { MemoryScene } from "@/components/sections/MemoryScene";
 import { Letter } from "@/components/sections/Letter";
+import { Ending } from "@/components/sections/Ending";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { AudioToggle } from "@/components/ui/AudioToggle";
 import { KonamiEasterEgg } from "@/components/ui/KonamiEasterEgg";
 import { Starfield } from "@/components/ui/Starfield";
 import { useLenis } from "@/hooks/useLenis";
-
-// Black placeholder that reserves the section's full height while the 3D
-// canvas chunk loads — prevents layout shift and keeps the dark mood.
-const SceneFallback = () => <div className="h-svh w-full bg-night" />;
-
-// 3D scenes are client-only and heavy, so they are code-split and never SSR'd.
-const MemoryScene = dynamic(
-  () => import("@/components/sections/MemoryScene").then((m) => m.MemoryScene),
-  { ssr: false, loading: SceneFallback },
-);
-const Ending = dynamic(
-  () => import("@/components/sections/Ending").then((m) => m.Ending),
-  { ssr: false, loading: SceneFallback },
-);
 
 export default function Home() {
   const [ready, setReady] = useState(false);

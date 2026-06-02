@@ -51,10 +51,19 @@ export function Starfield() {
     let dpr = 1;
     let stars: Star[] = [];
     let raf = 0;
+    let last = 0;
     let running = true;
+    const shooters: {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      life: number;
+    }[] = [];
+    let nextShoot = 2.5;
 
     const build = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       w = window.innerWidth;
       h = window.innerHeight;
       canvas.width = Math.floor(w * dpr);
@@ -64,7 +73,7 @@ export function Starfield() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // Density scales with screen area; capped so big screens stay cheap.
-      const total = Math.min(320, Math.round((w * h) / 6500));
+      const total = Math.min(170, Math.round((w * h) / 11000));
       const rng = mulberry32(20260214);
       stars = [];
       LAYERS.forEach((layer) => {
@@ -87,6 +96,13 @@ export function Starfield() {
     };
 
     const draw = (t: number) => {
+      // Throttle the full-screen repaint to ~30fps — the twinkle stays smooth
+      // and it halves the canvas cost (it shares the GPU with the 3D scenes).
+      if (!reduced && t - last < 32) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
+      last = t;
       ctx.clearRect(0, 0, w, h);
       const time = t * 0.001;
       const scrollY = reduced ? 0 : window.scrollY;
@@ -95,8 +111,10 @@ export function Starfield() {
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
         const px = s.x * w;
-        // wrap vertically: stars rise as you scroll down (parallax)
-        let py = (((s.y * band - scrollY * s.p) % band) + band) % band;
+        // wrap vertically: stars rise with scroll (parallax) AND drift slowly
+        // on their own over time, so the sky is always alive.
+        let py =
+          (((s.y * band - scrollY * s.p - time * 9) % band) + band) % band;
         py -= (band - h) / 2;
         if (py < -8 || py > h + 8) continue;
 
@@ -125,6 +143,48 @@ export function Starfield() {
           : `rgba(251,248,241,${alpha})`;
         ctx.beginPath();
         ctx.arc(px, py, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Shooting stars: spawn one every few seconds, streak across, fade out.
+      if (!reduced && time > nextShoot) {
+        nextShoot = time + 3.5 + Math.random() * 5;
+        const fromLeft = Math.random() > 0.5;
+        shooters.push({
+          x: fromLeft ? Math.random() * w * 0.4 : w * (0.6 + Math.random() * 0.4),
+          y: Math.random() * h * 0.4,
+          vx: (fromLeft ? 1 : -1) * (26 + Math.random() * 16),
+          vy: 16 + Math.random() * 12,
+          life: 1,
+        });
+      }
+      for (let i = shooters.length - 1; i >= 0; i--) {
+        const sh = shooters[i];
+        sh.x += sh.vx;
+        sh.y += sh.vy;
+        sh.life -= 0.02;
+        if (sh.life <= 0 || sh.x < -120 || sh.x > w + 120 || sh.y > h + 120) {
+          shooters.splice(i, 1);
+          continue;
+        }
+        const m = Math.hypot(sh.vx, sh.vy) || 1;
+        const tailLen = 110;
+        const tx = sh.x - (sh.vx / m) * tailLen;
+        const ty = sh.y - (sh.vy / m) * tailLen;
+        const a = Math.min(1, sh.life * 1.5);
+        const grad = ctx.createLinearGradient(sh.x, sh.y, tx, ty);
+        grad.addColorStop(0, `rgba(255,235,200,${a})`);
+        grad.addColorStop(1, "rgba(255,226,170,0)");
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(sh.x, sh.y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(255,244,222,${a})`;
+        ctx.beginPath();
+        ctx.arc(sh.x, sh.y, 1.7, 0, Math.PI * 2);
         ctx.fill();
       }
 
