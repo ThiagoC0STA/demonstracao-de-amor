@@ -121,47 +121,37 @@ function Chapter({ card, index }: { card: TimelineCard; index: number }) {
         </span>
       </motion.div>
 
-      {/* photo / video — pointer tilt (outer, gsap transform) wrapping a
-          clip-path reveal (Motion) and an internal parallax. The tilt and the
-          reveal live on different elements so gsap and Motion never fight over
-          the same `transform`. */}
-      <div
+      {/* photo / video — the reveal (opacity + rise) lives on the OUTER grid
+          child, the same proven pattern as the text. The previous clip-path
+          whileInView never fired (it sat on an element nested inside the
+          tilt-transformed wrapper), leaving every frame clipped to nothing and
+          the photo column black. The pointer tilt (gsap) keeps its own element
+          and the internal scroll parallax stays. */}
+      <motion.div
+        initial={reduced ? { opacity: 0 } : { opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.25 }}
+        transition={{ duration: 1, ease: EASE_SMOOTH }}
         className={`mt-10 pl-10 md:mt-0 md:pl-0 ${left ? "" : "md:order-1"}`}
       >
         <div
           ref={tiltRef}
-          className="relative aspect-[4/5] w-full [transform-style:preserve-3d]"
+          className="card-surface relative aspect-[4/5] w-full overflow-hidden rounded-md [transform-style:preserve-3d]"
         >
           <motion.div
-            initial={
-              reduced
-                ? { opacity: 0 }
-                : { opacity: 0, clipPath: "inset(0 0 100% 0)" }
-            }
-            whileInView={
-              reduced
-                ? { opacity: 1 }
-                : { opacity: 1, clipPath: "inset(0 0 0% 0)" }
-            }
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 1.1, ease: EASE_SMOOTH }}
-            className="card-surface absolute inset-0 overflow-hidden rounded-md"
+            style={{ y: imgY }}
+            className="absolute inset-x-0 -top-[15%] h-[130%]"
           >
-            <motion.div
-              style={{ y: imgY }}
-              className="absolute inset-x-0 -top-[15%] h-[130%]"
-            >
-              <MediaFrame
-                media={card.media}
-                seed={index + 1}
-                alt={card.title}
-                hint="foto desse momento"
-                className="h-full w-full"
-              />
-            </motion.div>
+            <MediaFrame
+              media={card.media}
+              seed={index + 1}
+              alt={card.title}
+              hint="foto desse momento"
+              className="h-full w-full"
+            />
           </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

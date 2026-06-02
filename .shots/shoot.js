@@ -1,53 +1,59 @@
 // Throwaway visual-diagnosis script. Launches Playwright's own Chromium,
-// walks through the intro gate, and screenshots the whole page while scrolling.
-// Not committed; lives under .shots/ which is gitignored ad hoc.
+// walks through the intro gate, and screenshots while scrolling with REAL
+// wheel events (so Lenis smooth-scroll drives the reveals correctly).
 const { chromium } = require("playwright");
 
 const OUT = __dirname;
 const URL = process.env.SHOT_URL || "http://localhost:3000";
 
+const shot = async (page, name) => {
+  try {
+    await page.screenshot({ path: `${OUT}/${name}.jpg`, type: "jpeg", quality: 70, timeout: 15000 });
+    console.log("shot " + name);
+  } catch (e) {
+    console.log("shot FAILED " + name + ": " + e.message);
+  }
+};
+
 (async () => {
   const browser = await chromium.launch();
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 900 },
-    deviceScaleFactor: 1,
-  });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
 
   const errors = [];
-  page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
-  });
   page.on("pageerror", (e) => errors.push("PAGEERROR: " + e.message));
 
   await page.goto(URL, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
-  await page.screenshot({ path: `${OUT}/00-intro.jpg`, type: "jpeg", quality: 72 });
+  await page.waitForTimeout(2500);
+  await shot(page, "00-intro");
 
-  // Intro gate: 3 buildup lines auto-advance, then the question + Yes button.
   try {
     const yes = page.getByRole("button", { name: /sim, pra sempre/i });
     await yes.waitFor({ state: "visible", timeout: 28000 });
-    await page.screenshot({ path: `${OUT}/01-question.jpg`, type: "jpeg", quality: 72 });
+    await shot(page, "01-question");
     await yes.click();
   } catch (e) {
-    console.log("GATE: yes button not reached: " + e.message);
+    console.log("GATE: " + e.message);
+  }
+  await page.waitForTimeout(4500);
+
+  // Put the pointer over the page so wheel events target the scroll container,
+  // then walk down with real wheel deltas (Lenis-friendly), shooting as we go.
+  await page.mouse.move(720, 450);
+  await shot(page, "02-top");
+
+  const labels = ["03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14"];
+  for (const lbl of labels) {
+    for (let k = 0; k < 5; k++) {
+      await page.mouse.wheel(0, 320);
+      await page.waitForTimeout(220);
+    }
+    await page.waitForTimeout(700);
+    await shot(page, lbl + "-scroll");
+    const atBottom = await page.evaluate(() => Math.ceil(window.scrollY + window.innerHeight) >= document.body.scrollHeight - 4);
+    if (atBottom) { console.log("reached bottom at " + lbl); break; }
   }
 
-  await page.waitForTimeout(4500); // let the dissolve finish
-  await page.screenshot({ path: `${OUT}/02-top.jpg`, type: "jpeg", quality: 72 });
-
-  // Walk the full page in ~10 steps using wheel events (works with Lenis).
-  const total = await page.evaluate(() => document.body.scrollHeight);
-  const steps = 10;
-  const step = Math.ceil(total / steps);
-  for (let i = 0; i < steps; i++) {
-    await page.mouse.wheel(0, step);
-    await page.waitForTimeout(1100);
-    const n = String(i + 3).padStart(2, "0");
-    await page.screenshot({ path: `${OUT}/${n}-scroll.jpg`, type: "jpeg", quality: 72 });
-  }
-
-  console.log("SCROLL_HEIGHT=" + total);
-  console.log("CONSOLE_ERRORS=" + JSON.stringify(errors.slice(0, 30)));
+  console.log("SCROLL_HEIGHT=" + (await page.evaluate(() => document.body.scrollHeight)));
+  console.log("ERRORS=" + JSON.stringify(errors.slice(0, 20)));
   await browser.close();
 })();

@@ -134,31 +134,31 @@ export const CONTENT = {
       date: "O começo",
       title: "Quando te vi",
       description: "Um instante que dividiu o tempo em antes e depois.",
-      media: { type: "image", src: "/images/historia-1.jpg" },
+      media: { type: "image", src: "/us/191855eb-2d8b-4675-adfb-a3bc1723aebd.jpg" },
     },
     {
       date: "Os primeiros dias",
       title: "A descoberta",
       description: "Cada conversa virava motivo pra querer a próxima.",
-      media: { type: "image", src: "/images/historia-2.jpg" },
+      media: { type: "image", src: "/us/456e0508-aaba-45a0-8f4f-51601d2d3b0b.jpg" },
     },
     {
       date: "No meio do caminho",
       title: "A certeza",
       description: "Percebi que casa não era um lugar, era você.",
-      media: { type: "image", src: "/images/historia-3.jpg" },
+      media: { type: "image", src: "/us/IMG_4239.jpg" },
     },
     {
       date: "Quando apertou",
       title: "Juntos",
       description: "A gente aprendeu que o difícil cabe quando é a dois.",
-      media: { type: "image", src: "/images/historia-4.jpg" },
+      media: { type: "image", src: "/us/286f031f-c060-4e40-85d5-80a7ae11556c.jpg" },
     },
     {
       date: "Agora",
       title: "Aqui",
       description: "E eu escolheria tudo de novo, sem pensar duas vezes.",
-      media: { type: "image", src: "/images/historia-5.jpg" },
+      media: { type: "image", src: "/us/IMG_4357.jpg" },
     },
   ] satisfies TimelineCard[],
 
@@ -167,32 +167,32 @@ export const CONTENT = {
     {
       title: "Seu jeito de rir",
       description: "Que desarma qualquer dia ruim em dois segundos.",
-      media: { type: "image", src: "/images/voce-1.jpg" },
+      media: { type: "image", src: "/us/c3722f14-67f2-451a-8721-73486eb889a4.jpg" },
     },
     {
       title: "Sua teimosia boa",
       description: "De não desistir das pessoas que você ama.",
-      media: { type: "image", src: "/images/voce-2.jpg" },
+      media: { type: "image", src: "/us/IMG_4555.PNG" },
     },
     {
       title: "Seu olhar",
       description: "Que entende o que eu não consigo colocar em palavras.",
-      media: { type: "image", src: "/images/voce-3.jpg" },
+      media: { type: "image", src: "/us/IMG_4554.PNG" },
     },
     {
       title: "Sua coragem",
       description: "De ser inteira mesmo quando seria mais fácil se esconder.",
-      media: { type: "image", src: "/images/voce-4.jpg" },
+      media: { type: "image", src: "/us/IMG_4024.PNG" },
     },
     {
       title: "Seu cuidado",
       description: "Nos detalhes pequenos que ninguém mais repara.",
-      media: { type: "image", src: "/images/voce-5.jpg" },
+      media: { type: "image", src: "/us/IMG_4443.jpg" },
     },
     {
       title: "Sua presença",
       description: "Que faz silêncio parecer companhia, não solidão.",
-      media: { type: "image", src: "/images/voce-6.jpg" },
+      media: { type: "image", src: "/us/AC4DD06E-773F-45B2-B5EB-66F7B5C2915E.gif" },
     },
   ] satisfies LoveQuality[],
 
@@ -237,11 +237,11 @@ export const ASSETS = {
    * are generated at runtime (see components/three/MemoryPolyhedron.tsx).
    */
   memoryPhotos: [
-    "/images/memory-1.jpg",
-    "/images/memory-2.jpg",
-    "/images/memory-3.jpg",
-    "/images/memory-4.jpg",
-    "/images/memory-5.jpg",
-    "/images/memory-6.jpg",
+    "/us/72FB4F53-438F-4874-9B51-47A31B54748E.jpg",
+    "/us/191855eb-2d8b-4675-adfb-a3bc1723aebd.jpg",
+    "/us/456e0508-aaba-45a0-8f4f-51601d2d3b0b.jpg",
+    "/us/IMG_4239.jpg",
+    "/us/IMG_4357.jpg",
+    "/us/IMG_4554.PNG",
   ],
 } as const;

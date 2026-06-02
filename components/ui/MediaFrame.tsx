@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MediaRef } from "@/lib/constants";
 import { mulberry32 } from "@/lib/seededRandom";
 
@@ -29,6 +29,15 @@ export function MediaFrame({
   hint?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Cached images can finish loading before React attaches `onLoad`, so the
+  // event never fires and the photo stays stuck at opacity 0 over the
+  // placeholder. Re-check `complete` on mount / src change to catch that race.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) setLoaded(true);
+  }, [media.src]);
 
   // Deterministic placeholder gradient (pure — no Math.random in render).
   const rng = mulberry32(seed * 2654435761 + 101);
@@ -61,6 +70,7 @@ export function MediaFrame({
       {media.type === "image" ? (
         // eslint-disable-next-line @next/next/no-img-element -- onError fallback for unknown user files; next/image can't gracefully degrade on 404
         <img
+          ref={imgRef}
           src={media.src}
           alt={alt}
           loading="lazy"
