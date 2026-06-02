@@ -256,6 +256,7 @@ export const CONTENT = {
   },
 
   ending: {
+    universe: "você é o meu universo",
     title: "eu te amo, Lilian",
     backToTop: "voltar ao início",
   },

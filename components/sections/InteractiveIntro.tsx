@@ -5,6 +5,7 @@ import { CONTENT } from "@/lib/constants";
 import { mulberry32 } from "@/lib/seededRandom";
 import { Starfield } from "@/components/ui/Starfield";
 import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
+import { useLenis } from "@/hooks/useLenis";
 
 /**
  * Section 0 — the gate, set in the universe. Pure CSS/JS, no animation library.
@@ -29,6 +30,7 @@ const SAD_EMOJIS = ["😢", "🥺", "😭", "😞", "🥲"];
 
 export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   const reduced = useReducedMotionPref();
+  const lenis = useLenis();
   const lines = CONTENT.gate.buildup;
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -92,9 +94,17 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
 
   // "sim, pra sempre" → play the love-contract video. Reduced motion skips
   // straight to the celebration beat (no autoplaying video). She said yes, so
-  // every sad face vanishes at once.
+  // every sad face vanishes at once, and we snap the page back to the top now
+  // (while the gate still covers everything) so the reveal doesn't flash in
+  // from wherever she happened to have scrolled.
   const handleYes = () => {
     setSadFaces([]);
+    // Snap to the top now (the gate still covers everything) so the reveal
+    // doesn't flash in from wherever she scrolled. Lenis is the source of truth
+    // when present (force: jump even if it's mid-settle); window covers the
+    // reduced-motion (no-Lenis) case.
+    lenis?.scrollTo(0, { immediate: true, force: true });
+    window.scrollTo(0, 0);
     setPhase(reduced ? "celebrate" : "contract");
   };
 

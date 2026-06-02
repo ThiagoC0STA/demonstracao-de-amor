@@ -589,6 +589,35 @@ body::after {
   }
 }
 
+/* Ending finale — orbiting "planets" + a breathing glow (the universe motif).
+   Centred via margins, never via transform, so the rotate/scale animations own
+   the transform cleanly. */
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.orbit {
+  animation: orbit 26s linear infinite;
+}
+.orbit-rev {
+  animation: orbit 34s linear infinite reverse;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+.breathe {
+  animation: breathe 6.5s ease-in-out infinite;
+}
+
 /* Letter — signature writes itself, then the flourish draws (on `.is-in`). */
 @keyframes sign-wipe {
   from {
