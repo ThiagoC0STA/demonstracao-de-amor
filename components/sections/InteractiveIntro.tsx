@@ -34,7 +34,8 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     if (phase !== "buildup") return;
     const isLast = lineIdx >= lines.length - 1;
-    const delay = lineIdx === 0 ? (reduced ? 500 : 900) : reduced ? 900 : 2400;
+    // Each line gets a comfortable, readable beat (was way too short for line 0).
+    const delay = reduced ? 1100 : 3200;
     const t = setTimeout(() => {
       if (isLast) setPhase("question");
       else setLineIdx((i) => i + 1);
@@ -96,7 +97,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                 initial={
                   reduced
                     ? { opacity: 0 }
-                    : { opacity: 0, y: 20, filter: "blur(8px)" }
+                    : { opacity: 0, y: 20, filter: "blur(5px)" }
                 }
                 animate={
                   reduced
@@ -106,7 +107,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                 exit={
                   reduced
                     ? { opacity: 0 }
-                    : { opacity: 0, y: -16, filter: "blur(8px)" }
+                    : { opacity: 0, y: -16, filter: "blur(5px)" }
                 }
                 transition={{ duration: 0.9, ease: EASE_SMOOTH }}
               >
@@ -142,6 +143,7 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
 
                 <motion.button
                   type="button"
+                  onMouseEnter={dodge}
                   onPointerEnter={dodge}
                   onFocus={dodge}
                   onClick={(e) => {
@@ -149,8 +151,8 @@ export function InteractiveIntro({ onComplete }: { onComplete: () => void }) {
                     dodge();
                   }}
                   animate={{ x: noPos.x, y: noPos.y, scale: noScale }}
-                  transition={{ duration: 0.45, ease: [0.33, 1, 0.68, 1] }}
-                  className="rounded-md px-6 py-3 font-sans text-sm text-muted hover:text-cream/70"
+                  transition={{ duration: 0.4, ease: [0.33, 1, 0.68, 1] }}
+                  className="rounded-md border border-cream/25 px-6 py-3 font-sans text-sm text-cream/65 transition-colors duration-200 hover:border-cream/40"
                 >
                   {CONTENT.gate.no}
                 </motion.button>

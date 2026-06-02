@@ -1,22 +1,23 @@
 "use client";
 
-import { motion, useInView, useScroll, useTransform } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { motion, useScroll, useTransform, type Variants } from "motion/react";
+import { useRef } from "react";
 import { CONTENT } from "@/lib/constants";
+import { EASE_SMOOTH } from "@/lib/animations";
 import { useReducedMotionPref } from "@/components/providers/ReducedMotionProvider";
 
 /**
  * Section 2 — Opening.
  *
- * As the section enters view a typewriter reveals the opening lines. The
- * background eases from pure black to a deep warm gradient driven by scroll
- * progress (useScroll). Reduced motion shows the full text immediately.
+ * As the section enters view, each line reveals word by word (lift + de-blur)
+ * on the signature curve — no jittery char-typewriter. The background eases
+ * from black to a soft wine glow driven by scroll progress. The last line is
+ * the gold-italic accent.
  */
 export function Opening() {
   const sectionRef = useRef<HTMLElement>(null);
   const reduced = useReducedMotionPref();
 
-  // Warm-gradient overlay opacity ramps as the section scrolls through view.
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "center center"],
@@ -26,27 +27,28 @@ export function Opening() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex min-h-svh items-center justify-center overflow-hidden bg-night px-6 py-32"
+      className="section-pad relative flex min-h-svh items-center justify-center overflow-hidden bg-night px-6"
     >
       <motion.div
         aria-hidden
         style={{ opacity: warmth }}
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(120,28,52,0.3),rgba(12,11,13,0)_72%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(158,43,63,0.16),rgba(12,11,13,0)_70%)]"
       />
 
       <div className="relative z-10 mx-auto max-w-[60ch] text-center">
-        <span className="mb-12 flex items-center justify-center gap-3 text-[0.7rem] uppercase tracking-[0.4em] text-gold/70">
+        <span className="meta-label mb-12 flex items-center justify-center gap-3">
           <span className="h-px w-10 bg-gold/40" />
           o início
           <span className="h-px w-10 bg-gold/40" />
         </span>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {CONTENT.opening.map((line, i) => (
-            <TypewriterLine
+            <Line
               key={i}
               text={line}
-              delay={i * 1.2}
+              delay={i * 0.4}
               reduced={reduced}
+              accent={i === CONTENT.opening.length - 1}
             />
           ))}
         </div>
@@ -55,48 +57,52 @@ export function Opening() {
   );
 }
 
-function TypewriterLine({
+function Line({
   text,
   delay,
   reduced,
+  accent,
 }: {
   text: string;
   delay: number;
   reduced: boolean;
+  accent: boolean;
 }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.6 });
-  const [shown, setShown] = useState("");
+  const words = text.split(" ");
 
-  useEffect(() => {
-    // Reduced motion renders the full text directly (see JSX), so the
-    // typewriter effect only runs for the animated path.
-    if (!inView || reduced) return;
-    let i = 0;
-    let interval: ReturnType<typeof setInterval>;
-    const start = setTimeout(() => {
-      interval = setInterval(() => {
-        i += 1;
-        setShown(text.slice(0, i));
-        if (i >= text.length) clearInterval(interval);
-      }, 32);
-    }, delay * 1000);
-
-    return () => {
-      clearTimeout(start);
-      clearInterval(interval);
-    };
-  }, [inView, text, delay, reduced]);
+  const container: Variants = {
+    hidden: {},
+    visible: {
+      transition: { staggerChildren: reduced ? 0 : 0.05, delayChildren: delay },
+    },
+  };
+  const word: Variants = reduced
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
+    : {
+        hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
+        visible: {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+          transition: { duration: 0.7, ease: EASE_SMOOTH },
+        },
+      };
 
   return (
-    <p
-      ref={ref}
-      className="font-display text-2xl leading-[1.6] text-cream sm:text-4xl"
+    <motion.p
+      variants={container}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.6 }}
+      className={`mx-auto max-w-[34ch] font-display text-3xl leading-[1.2] tracking-tight sm:text-5xl ${
+        accent ? "italic text-gold-bright" : "text-cream"
+      }`}
     >
-      {reduced ? text : shown}
-      {!reduced && shown.length < text.length && inView && (
-        <span className="animate-pulse text-gold">|</span>
-      )}
-    </p>
+      {words.map((w, i) => (
+        <motion.span key={i} variants={word} className="mr-[0.25em] inline-block">
+          {w}
+        </motion.span>
+      ))}
+    </motion.p>
   );
 }

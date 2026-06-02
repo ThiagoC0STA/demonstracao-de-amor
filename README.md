@@ -35,7 +35,11 @@ component code needs to change.
 
 | Field | What it controls |
 |---|---|
-| `name` | The name typed in the preloader and rendered in 3D in the hero. |
+| `name` | The name rendered in 3D in the hero. |
+| `gate.buildup[]` | The cinematic build-up lines in the **interactive opening**. |
+| `gate.question` | The yes/no question ("quer ser minha pra sempre?"). |
+| `gate.yes` / `gate.no` | The button labels. "No" softly dodges; "Yes" celebrates → reveals the letter. |
+| `gate.celebration` / `gate.celebrationSub` | The two lines shown after "Yes". |
 | `hero.subtitle` | The italic line under the 3D name. |
 | `opening[]` | The two (or more) typewriter lines in Section 2. Keep them short. |
 | `timeline[]` | The 5 timeline cards. Each: `{ date, title, description }`. The `date` is just a label ("O começo", "2021"…), not a real date — write anything. |
@@ -68,25 +72,36 @@ in over 2s and out over 1s via Howler.
 
 ---
 
-## Adding your own photos (3D memory scene)
+## Adding your photos & videos (the important part)
 
-By default the dodecahedron uses **generated gold gradient placeholders** so the
-scene always renders. To use real photos:
+Every photo/video slot is a `MediaRef` (`{ type, src, poster? }`) in
+[`lib/constants.ts`](lib/constants.ts). Just **drop a file at the `src` path**
+under `public/` and it appears — until then an elegant placeholder shows (no
+broken images, no code change). See [components/ui/MediaFrame.tsx](components/ui/MediaFrame.tsx).
 
-1. Drop 6 images in `public/images/` named `memory-1.jpg` … `memory-6.jpg`
-   (square images look best — they're shown on flat faces). Paths are listed in
-   `ASSETS.memoryPhotos`.
-2. In [`components/three/MemoryPolyhedron.tsx`](components/three/MemoryPolyhedron.tsx),
-   replace the generated textures with a loader. Swap the `textures` memo for:
+**Drop-in photos (pre-wired paths):**
 
-   ```tsx
-   import { useTexture } from "@react-three/drei";
-   // inside the component, instead of the makeGradientTexture memo:
-   const textures = useTexture([...ASSETS.memoryPhotos]);
-   ```
+| Where | Files to add in `public/images/` |
+|---|---|
+| "O que eu amo em você" cards (flip to reveal) | `voce-1.jpg` … `voce-6.jpg` |
+| "Nossa história" timeline (one per chapter) | `historia-1.jpg` … `historia-5.jpg` |
 
-   (Keep `<MemoryPolyhedron />` inside a `<Suspense>` — it already is, in
-   `MemoryScene.tsx`.)
+Square-ish or portrait (4:5) images look best. That's it — drop them in and
+refresh.
+
+**Using a video instead of a photo** — in `lib/constants.ts`, change that
+item's `media` to:
+
+```ts
+media: { type: "video", src: "/videos/nosso-video.mp4", poster: "/images/poster.jpg" }
+```
+
+…and put the file in `public/videos/`. It renders muted+looping with controls.
+
+**3D memory dodecahedron** still uses generated gradient placeholders by default
+(so it always renders). To map your photos onto it too, swap the texture memo in
+[`components/three/MemoryPolyhedron.tsx`](components/three/MemoryPolyhedron.tsx)
+for `useTexture([...ASSETS.memoryPhotos])` (paths in `ASSETS.memoryPhotos`).
 
 ---
 
